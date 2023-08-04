@@ -1,0 +1,30 @@
+Modules list:
+-------------
+hb8b-wozmon.o:
+    VECTORS           Offs=000000  Size=000006  Align=00001  Fill=0000
+    WOZMON            Offs=000000  Size=0000FA  Align=00001  Fill=0000
+
+
+Segment list:
+-------------
+Name                   Start     End    Size  Align
+----------------------------------------------------
+WOZMON                00FF00  00FFF9  0000FA  00001
+VECTORS               00FFFA  00FFFF  000006  00001
+
+
+Exports list by name:
+---------------------
+__REGISTERS_START__       000080 RLA    
+
+
+Exports list by value:
+----------------------
+__REGISTERS_START__       000080 RLA    
+
+
+Imports list:
+-------------
+__REGISTERS_START__ ([linker generated]):
+    hb8b-wozmon.o             hb8b-wozmon.asm:3
+
