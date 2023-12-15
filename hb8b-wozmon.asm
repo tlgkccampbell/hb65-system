@@ -187,10 +187,10 @@ PRHEX:
                 ADC     #$06           ; Add offset for letter.
 
 ECHO:
-                PHA                    ; Save A.
-                STA     ACIA_DATA      ; Output character.
-                LDA     #$FF           ; Initialize delay loop.
-TXDELAY:        DEC                    ; Decrement A.
-                BNE     TXDELAY        ; Until A gets to 0.
-                PLA                    ; Restore A.
-                RTS                    ; Return.
+                PHA
+                LDA     ACIA_STATUS
+                AND     #$10
+                BEQ     ECHO
+                PLA
+                STA     ACIA_DATA
+                RTS
