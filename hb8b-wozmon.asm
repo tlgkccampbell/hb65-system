@@ -186,11 +186,10 @@ PRHEX:
                 BCC     ECHO           ; Yes, output it.
                 ADC     #$06           ; Add offset for letter.
 
-ECHO:
-                PHA
-                LDA     ACIA_STATUS
+ECHO:           PHA
+ECHO1:          LDA     ACIA_STATUS
                 AND     #$10
-                BEQ     ECHO
+                BEQ     ECHO1
                 PLA
                 STA     ACIA_DATA
                 RTS
