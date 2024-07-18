@@ -26,7 +26,7 @@ ACIA_CTRL   = ACIA + $03
 
 .SEGMENT "WOZMON"
 RESET:
-                LDA     #$1F           ; 8-N-1, 19200 baud.
+                LDA     #$1E           ; 8-N-1, 9600 baud.
                 STA     ACIA_CTRL
                 LDA     #$0B           ; No parity, no echo, no interrupts.
                 STA     ACIA_CMD
@@ -46,6 +46,8 @@ ESCAPE:
 
 GETLINE:
                 LDA     #$0D           ; Send CR
+                JSR     ECHO
+                LDA     #$0A           ; Send LF
                 JSR     ECHO
 
                 LDY     #$01           ; Initialize text index.
@@ -142,6 +144,8 @@ NXTPRNT:
                 BNE     PRDATA         ; NE means no address to print.
                 LDA     #$0D           ; CR.
                 JSR     ECHO           ; Output it.
+                LDA     #$0A
+                JSR     ECHO
                 LDA     XAMH           ; 'Examine index' high-order byte.
                 JSR     PRBYTE         ; Output it in hex format.
                 LDA     XAML           ; Low-order 'examine index' byte.
