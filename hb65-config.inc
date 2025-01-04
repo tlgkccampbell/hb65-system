@@ -1,0 +1,19 @@
+.IFNDEF _INCLUDE_CONFIG_
+_INCLUDE_CONFIG_ = 1
+
+.INCLUDE "hb65-config-helpers.inc"
+
+; System card
+CFG_SYS_CARD = SYSTEM_CARDS::TYPE_A
+
+; Register-only devices
+DECLARE_RDEV 1, CFG_DEVICE_ACIA
+DECLARE_RDEV 0, 
+
+; Peripheral devices
+DECLARE_PDEV 3, 
+DECLARE_PDEV 2, 
+DECLARE_PDEV 1, 
+DECLARE_PDEV 0, CFG_DEVICE_VPU 
+
+.ENDIF

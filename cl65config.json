@@ -1,4 +1,0 @@
-{
-    "input": "hb8b-wozmon.asm",
-    "params": "--verbose --target c64"
-}

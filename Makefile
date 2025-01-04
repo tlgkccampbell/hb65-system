@@ -10,16 +10,14 @@ OBJDIR=obj
 
 SRCS = $(wildcard *.asm)
 OBJS = $(SRCS:%.asm=$(OBJDIR)/%.o)
+DEPS = $(OBJS:%.o=%.d)
+BINS = $(BINDIR)/$(MAKEFILE_DIR).bin $(BINDIR)/$(MAKEFILE_DIR).lbl $(BINDIR)/$(MAKEFILE_DIR).map
+CFGS = hb65.cfg
 
-all: $(OBJS) | $(BINDIR)
-	ld65 $(OBJS) -o $(BINDIR)/$(MAKEFILE_DIR).bin -m $(BINDIR)/$(MAKEFILE_DIR).map -C hb65.cfg
+ASSM_SYMS = -D EHBASIC_ANSI_SUPPORT -D EHBASIC_MIXED_CASE -D EHBASIC_SKIP_BOOT_PROMPT -D EHBASIC_SKIP_MEMORY_PROMPT -D EHBASIC_CONDENSED_SIGNON
+LINK_SYMS = 
 
-$(OBJDIR):
-ifeq ($(OS),Windows_NT)
-	@cmd /C "if not exist $(OBJDIR) mkdir $(OBJDIR)"
-else
-	@mkdir -p $(OBJDIR)
-endif
+all: $(BINS)
 
 $(BINDIR):
 ifeq ($(OS),Windows_NT)
@@ -28,20 +26,31 @@ else
 	@mkdir -p $(BINDIR)
 endif
 
-$(OBJS): | $(OBJDIR)
+$(BINS): $(OBJS) | $(BINDIR)
+	ld65 $(OBJS) -o $(BINDIR)/$(MAKEFILE_DIR).bin -m $(BINDIR)/$(MAKEFILE_DIR).map -C hb65.cfg -Ln $(BINDIR)/$(MAKEFILE_DIR).lbl $(LINK_SYMS)
+
+$(OBJDIR):
+ifeq ($(OS),Windows_NT)
+	@cmd /C "if not exist $(OBJDIR) mkdir $(OBJDIR)"
+else
+	@mkdir -p $(OBJDIR)
+endif
+
+$(OBJS): $(CFGS) | $(OBJDIR)
 $(OBJDIR)/%.o: %.asm
-	ca65 -t none -l $(OBJDIR)/$*.lst -o $(OBJDIR)/$*.o $<
+	ca65 -D hb65 -g -t none --cpu 65C02 -l $(OBJDIR)/$*.lst -o $(OBJDIR)/$*.o --create-dep $(OBJDIR)/$*.d $(ASSM_SYMS) $<
+
+-include $(DEPS)
 
 .PHONY: clean
 clean:
 ifeq ($(OS),Windows_NT)
-	@rmdir /S /Q $(OBJDIR)
-	@rmdir /S /Q $(BINDIR)
+	@cmd /c if exist $(OBJDIR) rmdir /S /Q $(OBJDIR)
+	@cmd /c if exist $(BINDIR) rmdir /S /Q $(BINDIR)
 else
 	@rm -rf $(OBJDIR)
 	@rm -rf $(BINDIR)
 endif
-
 
 XMEM_USB_PID ?= 04d8
 XMEM_USB_VID ?= 00dd
