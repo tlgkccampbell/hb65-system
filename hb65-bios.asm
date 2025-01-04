@@ -4,6 +4,13 @@
 
 .INCLUDE    "hb65-registers.inc"
 
+.IMPORT     WOZ_ENTER, WOZ_EXIT
+
+; BIOS jumptable
+.SEGMENT "BIOS"
+JMP WOZ_ENTER       ; $00
+JMP WOZ_EXIT        ; $03
+
 ; BIOS routines
 .SEGMENT "CODE"
 
