@@ -36,6 +36,8 @@ WOZ_ENTER:      LDA     DECODER_ALR     ; Preserve current ALR in A
                 STA     ALR_SV          ; Store old ALR
                 STX     ZPLR_SV         ; Store old ZPLR
                 STY     WRBR_SV         ; Store old WRBR
+                LDA     #$0F
+                STA     DECODER_ALR     ; Map all peripheral memories
                 LDA     #$FF
                 STA     DECODER_ZPLR    ; Map all peripherals to ZP
                 LDA     #$1B            ; Begin with escape.
