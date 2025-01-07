@@ -39,8 +39,11 @@ LAB_mess:
 ; Performs JMP on exit.
 .PROC EHBASIC_INIT
     ; initialize the address decoder
+    STZ     DECODER_ALR
     LDA     #$40
     STA     DECODER_ZPLR
+    LDA     #$01
+    STA     DECODER_WRBR
     ; set up vectors and interrupt code, copy them to page 2
     LDY     #END_CODE - LAB_vec ; set index/count
 LAB_stlp:

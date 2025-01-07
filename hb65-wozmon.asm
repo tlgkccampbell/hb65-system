@@ -8,8 +8,9 @@
 .EXPORT     WOZ_ENTER, WOZ_EXIT
 
 ; Wozmon memory locations
-ZPLR_SV = $00   ; Saved ZPLR
-WRBR_SV = $01   ; Saved WRBR
+ALR_SV  = $00   ; Saved ALR
+ZPLR_SV = $01   ; Saved ZPLR
+WRBR_SV = $02   ; Saved WRBR
 XAML    = $24   ; Last "opened" location Low
 XAMH    = $25   ; Last "opened" location High
 STL     = $26   ; Store address Low
@@ -21,15 +22,18 @@ MODE    = $2B   ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 IN      = $4000 ; Input buffer
 
 ; Wozmon code
-WOZ_EXIT:       LDX     ZPLR_SV         ; Read previous ZPLR
+WOZ_EXIT:       LDA     ALR_SV          ; Read previous ALR
+                LDX     ZPLR_SV         ; Read previous ZPLR
                 LDY     WRBR_SV         ; Read previous WRBR
+                STA     DECODER_ALR     ; Restore ALR
                 STX     DECODER_ZPLR    ; Restore ZPLR
                 STY     DECODER_WRBR    ; Restore WRBR
                 JMP     LAB_WARM        ; Return to EhBASIC
-WOZ_ENTER:      LDX     DECODER_ZPLR    ; Preserve current ZPLR in X
+WOZ_ENTER:      LDA     DECODER_ALR     ; Preserve current ALR in A
+                LDX     DECODER_ZPLR    ; Preserve current ZPLR in X
                 LDY     DECODER_WRBR    ; Preserve current WRBR in Y
-                LDA     #$FF
-                STA     DECODER_WRBR    ; Switch to Work RAM Bank 15
+                STZ     DECODER_WRBR    ; Switch to Work RAM Bank 0
+                STA     ALR_SV          ; Store old ALR
                 STX     ZPLR_SV         ; Store old ZPLR
                 STY     WRBR_SV         ; Store old WRBR
                 LDA     #$FF
