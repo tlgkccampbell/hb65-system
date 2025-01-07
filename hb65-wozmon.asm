@@ -22,6 +22,8 @@ MODE    = $2B   ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 IN      = $4000 ; Input buffer
 
 ; Wozmon code
+.SEGMENT "WOZMON"
+
 WOZ_EXIT:       LDA     ALR_SV          ; Read previous ALR
                 LDX     ZPLR_SV         ; Read previous ZPLR
                 LDY     WRBR_SV         ; Read previous WRBR

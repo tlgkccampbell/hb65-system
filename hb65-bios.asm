@@ -7,12 +7,14 @@
 .IMPORT     WOZ_ENTER, WOZ_EXIT
 
 ; BIOS jumptable
-.SEGMENT "BIOS"
+.SEGMENT "BIOSTBL"
+
+BIOSTBL:
 JMP WOZ_ENTER       ; $00
 JMP WOZ_EXIT        ; $03
 
 ; BIOS routines
-.SEGMENT "CODE"
+.SEGMENT "BIOS"
 
 ; UART routines
 
