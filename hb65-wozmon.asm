@@ -9,7 +9,7 @@
 
 ; Wozmon memory locations
 ZPLR_SV = $00   ; Saved ZPLR
-ZPRR_SV = $01   ; Saved ZPRR
+WRBR_SV = $01   ; Saved WRBR
 XAML    = $24   ; Last "opened" location Low
 XAMH    = $25   ; Last "opened" location High
 STL     = $26   ; Store address Low
@@ -21,18 +21,19 @@ MODE    = $2B   ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
 IN      = $4000 ; Input buffer
 
 ; Wozmon code
-WOZ_EXIT:       LDA     ZPLR_SV         ; Restore the ZPLR register
-                STA     DECODER_ZPLR
-                LDA     ZPRR_SV         ; Restore the ZPRR register
-                STA     DECODER_ZPRR
+WOZ_EXIT:       LDX     ZPLR_SV         ; Read previous ZPLR
+                LDY     WRBR_SV         ; Read previous WRBR
+                STX     DECODER_ZPLR    ; Restore ZPLR
+                STY     DECODER_WRBR    ; Restore WRBR
                 JMP     LAB_WARM        ; Return to EhBASIC
-WOZ_ENTER:      LDX     DECODER_ZPLR    ; Save the ZPLR register
-                LDY     DECODER_ZPRR    ; Save the ZPRR register
-                LDA     #$FF            
-                STA     DECODER_ZPLR    ; Enable zeropage relocation.
-                STA     DECODER_ZPRR    ; Use zeropage 31.
-                STX     ZPLR_SV
-                STY     ZPRR_SV
+WOZ_ENTER:      LDX     DECODER_ZPLR    ; Preserve current ZPLR in X
+                LDY     DECODER_WRBR    ; Preserve current WRBR in Y
+                LDA     #$FF
+                STA     DECODER_WRBR    ; Switch to Work RAM Bank 15
+                STX     ZPLR_SV         ; Store old ZPLR
+                STY     WRBR_SV         ; Store old WRBR
+                LDA     #$FF
+                STA     DECODER_ZPLR    ; Map all peripherals to ZP
                 LDA     #$1B            ; Begin with escape.
 NOTCR:
                 CMP     #$08            ; Backspace key?
