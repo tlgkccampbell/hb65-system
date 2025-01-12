@@ -57,17 +57,29 @@ XMEM_USB_VID ?= 00dd
 ifeq ($(OS),Windows_NT)
 .PHONY: bindusb
 bindusb:
+ifdef XMEM_USB_BUSID
+	usbipd bind -b $(XMEM_USB_BUSID)
+else
 	usbipd bind -i $(XMEM_USB_PID):$(XMEM_USB_VID)
+endif
 
 .PHONY: passusb
 passusb:
+ifdef XMEM_USB_BUSID
+	usbipd attach -a -b $(XMEM_USB_BUSID) --wsl
+else
 	usbipd attach -a -i $(XMEM_USB_PID):$(XMEM_USB_VID) --wsl
+endif
 endif
 
 XMEM_PORT ?= /dev/ttyACM0
 .PHONY: deployxmem
 deployxmem: all
-	@$(WSL) ./scripts/deployxmem.sh $(MAKEFILE_DIR) $(XMEM_PORT)
+	$(WSL) ./scripts/deployxmem.sh $(MAKEFILE_DIR) $(XMEM_PORT)
 
 .PHONY: deploy
 deploy: deployxmem
+
+.PHONY: resetcpu
+resetcpu:
+	$(WSL) ./scripts/resetcpu.sh $(XMEM_PORT)
