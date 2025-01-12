@@ -16,6 +16,25 @@ JMP WOZ_EXIT        ; $03
 ; BIOS routines
 .SEGMENT "BIOS"
 
+; System routines
+
+; SYSTEM_INIT procedure
+; Modifies: A, X, flags
+;
+; Initializes the system state upon reset.
+.PROC SYSTEM_INIT
+    LDA #$00
+    STA DECODER_DCR
+    LDA #$00
+    STA DECODER_ALR
+    LDA #$FF
+    STA DECODER_ZPLR
+    LDA #$00
+    STA DECODER_WRBR
+    RTS
+.ENDPROC
+.EXPORT SYSTEM_INIT
+
 ; UART routines
 
 ; UART_INIT procedure
