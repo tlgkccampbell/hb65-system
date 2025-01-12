@@ -9,19 +9,21 @@
 
 ; Interrupt handlers
 HandleNMI:
-    JMP     EHBASIC_NMI_HANDLER
+    ; TODO: This needs some kind of indirection based on the current WRAM bank
+    JMP EHBASIC_NMI_HANDLER
 
 HandleIRQ:
-    JMP     EHBASIC_IRQ_HANDLER
+    ; TODO: This needs some kind of indirection based on the current WRAM bank
+    JMP EHBASIC_IRQ_HANDLER
 
 HandleRES:
     CLD
     CLI
     LDX #$FF
     TXS
-    JSR      SYSTEM_INIT
-    JSR        UART_INIT
-    JMP     EHBASIC_INIT
+    JSR SYSTEM_INIT
+    JSR UART_INIT
+    JMP EHBASIC_INIT
 
 ; CPU vector table
 .SEGMENT "VECTORS"
