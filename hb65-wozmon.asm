@@ -5,12 +5,12 @@
 .INCLUDE    "hb65-system.inc"
 
 .IMPORTZP   LAB_WARM
+.IMPORT     PROC_NEW, PROC_KILL, PROC_SWITCH
+.IMPORT     SYSCDAT_JMP_ADDR
+
 .EXPORT     WOZ_ENTER, WOZ_EXIT
 
 ; Wozmon memory locations
-ALR_SV  = $00   ; Saved ALR
-ZPLR_SV = $01   ; Saved ZPLR
-WRBR_SV = $02   ; Saved WRBR
 XAML    = $24   ; Last "opened" location Low
 XAMH    = $25   ; Last "opened" location High
 STL     = $26   ; Store address Low
@@ -24,24 +24,18 @@ IN      = $0200 ; Input buffer
 ; Wozmon code
 .SEGMENT "WOZMON"
 
-WOZ_EXIT:       LDA     ALR_SV          ; Read previous ALR
-                LDX     ZPLR_SV         ; Read previous ZPLR
-                LDY     WRBR_SV         ; Read previous WRBR
-                STA     DECODER_ALR     ; Restore ALR
-                STX     DECODER_ZPLR    ; Restore ZPLR
-                STY     DECODER_WRBR    ; Restore WRBR
-                JMP     LAB_WARM        ; Return to EhBASIC
-WOZ_ENTER:      LDA     DECODER_ALR     ; Preserve current ALR in A
-                LDX     DECODER_ZPLR    ; Preserve current ZPLR in X
-                LDY     DECODER_WRBR    ; Preserve current WRBR in Y
-                STZ     DECODER_WRBR    ; Switch to Work RAM Bank 0
-                STA     ALR_SV          ; Store old ALR
-                STX     ZPLR_SV         ; Store old ZPLR
-                STY     WRBR_SV         ; Store old WRBR
-                LDA     #$0F
-                STA     DECODER_ALR     ; Map all peripheral memories
-                LDA     #$FF
-                STA     DECODER_ZPLR    ; Map all peripherals to ZP
+WOZ_EXIT:       LDX     #$02            ; Kill the wozmon process and
+                JSR     PROC_KILL       ; switch back to the EhBASIC process
+                LDX     #$01
+             STADDR     LAB_WARM, SYSCDAT_JMP_ADDR
+                JSR     PROC_SWITCH
+WOZ_ENTER:      JSR     PROC_NEW        ; Allocate a new process for wozmon
+             STADDR     :+, SYSCDAT_JMP_ADDR
+                JSR     PROC_SWITCH
+:               LDA     #$0F            ; Map all peripheral memories
+                STA     DECODER_ALR     
+                LDA     #$FF            ; Map all peripherals to ZP
+                STA     DECODER_ZPLR    
                 LDA     #$1B            ; Begin with escape.
 NOTCR:
                 CMP     #$08            ; Backspace key?
