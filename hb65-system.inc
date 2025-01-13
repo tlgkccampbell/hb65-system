@@ -1,0 +1,6 @@
+.IFNDEF _INCLUDE_SYSTEM_
+_INCLUDE_SYSTEM_ = 1
+
+.INCLUDE    "hb65-registers.inc"
+
+.ENDIF

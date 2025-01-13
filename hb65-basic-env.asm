@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "Enhanced BASIC operating environment for the HB65 Microcomputer System"
 
-.INCLUDE    "hb65-registers.inc"
+.INCLUDE    "hb65-system.inc"
 
 .IMPORT     UART_GETCH, UART_PUTCH
 .IMPORTZP   LAB_WARM, NmiBase, IrqBase

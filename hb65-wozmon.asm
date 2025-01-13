@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Steve Wozniak, Cole Campbell"
 .FILEOPT    comment,    "Wozmon for the HB65 Microcomputer System"
 
-.INCLUDE    "hb65-registers.inc"
+.INCLUDE    "hb65-system.inc"
 
 .IMPORTZP   LAB_WARM
 .EXPORT     WOZ_ENTER, WOZ_EXIT

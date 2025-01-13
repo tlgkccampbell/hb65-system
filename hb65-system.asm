@@ -17,11 +17,21 @@ HandleIRQ:
     JMP EHBASIC_IRQ_HANDLER
 
 HandleRES:
+    ; Initialize processor
     CLD
     CLI
     LDX #$FF
     TXS
-    JSR SYSTEM_INIT
+    ; Initialize the Address Decoder
+    LDA #$00
+    STA DECODER_DCR
+    LDA #$00
+    STA DECODER_ALR
+    LDA #$FF
+    STA DECODER_ZPLR
+    LDA #$00
+    STA DECODER_WRBR
+    ; Initialize peripherals and jump to EhBASIC
     JSR UART_INIT
     JMP EHBASIC_INIT
 
