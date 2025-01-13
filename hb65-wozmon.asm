@@ -5,7 +5,7 @@
 .INCLUDE    "hb65-system.inc"
 
 .IMPORTZP   LAB_WARM
-.IMPORT     PROC_NEW, PROC_KILL, PROC_SWITCH
+.IMPORT     PROC_NEW, PROC_TERM, PROC_SWITCH
 .IMPORT     SYSCDAT_JMP_ADDR
 
 .EXPORT     WOZ_ENTER, WOZ_EXIT
@@ -19,19 +19,17 @@ L       = $28   ; Hex value parsing Low
 H       = $29   ; Hex value parsing High
 YSAV    = $2A   ; Used to see if hex value is given
 MODE    = $2B   ; $00=XAM, $7F=STOR, $AE=BLOCK XAM
-IN      = $0200 ; Input buffer
+IN      = $0300 ; Input buffer
 
 ; Wozmon code
 .SEGMENT "WOZMON"
 
-WOZ_EXIT:       LDX     #$02            ; Kill the wozmon process and
-                JSR     PROC_KILL       ; switch back to the EhBASIC process
-                LDX     #$01
-             STADDR     LAB_WARM, SYSCDAT_JMP_ADDR
-                JSR     PROC_SWITCH
+WOZ_EXIT:       JSR     PROC_TERM       ; Kill the wozmon process and
+                                        ; switch back to the EhBASIC process
 WOZ_ENTER:      JSR     PROC_NEW        ; Allocate a new process for wozmon
              STADDR     :+, SYSCDAT_JMP_ADDR
                 JSR     PROC_SWITCH
+                RTS
 :               LDA     #$0F            ; Map all peripheral memories
                 STA     DECODER_ALR     
                 LDA     #$FF            ; Map all peripherals to ZP

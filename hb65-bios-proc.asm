@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS process management routines"
 
-.IMPORT     SYSCDAT_JMP_ADDR, SYSCDAT_JMP_ADDR_HI, SYSCDAT_JMP_ADDR_LO
+.IMPORT     SYSCDAT_JMP_ADDR, SYSCDAT_RET_ADDR
 
 .INCLUDE    "hb65-system.inc"
 
@@ -10,9 +10,10 @@
 PROC_MAX_COUNT          := $00
 PROC_CURRENT_IX         := $01
 PROC_METADATA_STATES    := $0300
-PROC_METADATA_REG_DCR   := $0310
-PROC_METADATA_REG_ALR   := $0320
-PROC_METADATA_REG_ZPLR  := $0330
+PROC_METADATA_REG_PC    := $0310
+PROC_METADATA_REG_DCR   := $0330
+PROC_METADATA_REG_ALR   := $0340
+PROC_METADATA_REG_ZPLR  := $0350
 
 ; Process management routines
 .SEGMENT "BIOS"
@@ -78,18 +79,45 @@ PROC_DONE:
 .ENDPROC
 .EXPORT PROC_NEW
 
-; PROC_KILL procedure
-; Modifies: X, flags
+; PROC_TERM procedure
+; Modifies: A, X, flags
 ;
-; Kills the process with the index specified in the A register.
-.PROC PROC_KILL
+; Terminates the current process and switches to another running process.
+.PROC PROC_TERM
     STZ DECODER_SCR
+
+    LDX PROC_CURRENT_IX             ; Ensure that we don't terminate process 0
+    BEQ PROC_FAIL
+
+    STZ PROC_METADATA_STATES, X     ; Clear the process status flags
+
+    LDX PROC_MAX_COUNT              ; Find a valid process
+:   DEX
+    BIT PROC_METADATA_STATES, X
+    BPL :-
+
+    STX DECODER_WRBR                ; Switch to the selected process' memory space
+    JSR _PROC_LOAD_REGISTERS        ; and load its registers
+
+    TXA                             ; Multiply X by 2
+    ASL
     TAX
-    STZ PROC_METADATA_STATES, X
+
+    LDA PROC_METADATA_REG_PC, X     ; Copy return address to shared memory space
+    STA SYSCDAT_RET_ADDR
+    INX
+    LDA PROC_METADATA_REG_PC, X 
+    STA SYSCDAT_RET_ADDR+1
+
+    STZ DECODER_SCR                 ; Jump to process return address 
+    JMP (SYSCDAT_RET_ADDR)
+
+PROC_FAIL:
+    LDA #$FF
     STZ DECODER_SCR
     RTS
 .ENDPROC
-.EXPORT PROC_KILL
+.EXPORT PROC_TERM
 
 ; PROC_SWITCH procedure
 ; Modifies: A, X, Y, flags
@@ -97,36 +125,52 @@ PROC_DONE:
 ; Switches execution to the process specified in the X register, then jumps
 ; to the location stored in PROC_DATA_TARGET_ADDR (in the shared data page).
 .PROC PROC_SWITCH
-    STZ DECODER_SCR             ; Enter syscall mode
+    PLA                             ; Pull the return address off of the stack
+    STA SYSCDAT_RET_ADDR            ; and transfer it into the shared data page.
+    PLA
+    STA SYSCDAT_RET_ADDR+1
 
-    BIT PROC_METADATA_STATES, X ; Ensure that the requested process exists
-    BPL FAILED                  ; and fail if it does not.
+    INC SYSCDAT_RET_ADDR            ; Increment the return address.
+    BNE :+
+    INC SYSCDAT_RET_ADDR+1
+:   
 
-    PLA                         ; Discard the return address that was pushed
-    PLA                         ; onto the stack by JSR; we won't need it.
+    STZ DECODER_SCR                 ; Enter syscall mode
 
-    PHX                         ; Save the registers for the current process
-    LDX PROC_CURRENT_IX
+    BIT PROC_METADATA_STATES, X     ; Ensure that the requested process exists
+    BPL FAILED                      ; and fail if it does not.
+
+    PHX                             ; Save the registers for the current process
+    LDX PROC_CURRENT_IX             
     JSR _PROC_SAVE_REGISTERS    
 
-    PLX                         ; Update the current process index
+    TXA                             ; Update the return address for the
+    ASL                             ; current process.
+    TAX
+    LDA SYSCDAT_RET_ADDR            
+    STA PROC_METADATA_REG_PC, X     
+    LDA SYSCDAT_RET_ADDR+1
+    INX
+    STA PROC_METADATA_REG_PC, X                                
+    
+    PLX                             ; Update the current process index
     STX PROC_CURRENT_IX         
 
-    JSR _PROC_LOAD_REGISTERS    ; Load the registers for the new process.
+    JSR _PROC_LOAD_REGISTERS        ; Load the registers for the new process.
 
-    LDA SYSCDAT_JMP_ADDR        ; Copy the jump address into registers
-    LDY SYSCDAT_JMP_ADDR+1      ; so that we don't lose them when banking WRAM.
+    LDA SYSCDAT_JMP_ADDR            ; Copy the jump address into registers
+    LDY SYSCDAT_JMP_ADDR+1          ; so that we don't lose them when banking WRAM.
 
-    STX DECODER_WRBR            ; Switch to the new memory space.
+    STX DECODER_WRBR                ; Switch to the new memory space.
 
-    STA SYSCDAT_JMP_ADDR        ; Copy the jump address into the newly-exposed
-    STY SYSCDAT_JMP_ADDR+1      ; shared data page in WRAM.
+    STA SYSCDAT_JMP_ADDR            ; Copy the jump address into the newly-exposed
+    STY SYSCDAT_JMP_ADDR+1          ; shared data page in WRAM.
 
-    STZ DECODER_SCR             ; Exit syscall mode and jump to
-    JMP (SYSCDAT_JMP_ADDR)      ; the target address.
+    STZ DECODER_SCR                 ; Exit syscall mode and jump to
+    JMP (SYSCDAT_JMP_ADDR)          ; the target address.
 
 FAILED:
-    STZ DECODER_SCR             ; Exit syscall mode and return $FF
+    STZ DECODER_SCR                 ; Exit syscall mode and return $FF
     LDA #$FF
     RTS
 .ENDPROC
