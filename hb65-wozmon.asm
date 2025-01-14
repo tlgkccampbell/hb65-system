@@ -31,9 +31,9 @@ WOZ_ENTER:      JSR     PROC_NEW        ; Allocate a new process for wozmon
                 JSR     PROC_SWITCH
                 RTS
 :               LDA     #$0F            ; Map all peripheral memories
-                STA     DECODER_ALR     
+                STA     DECODER_MLR     
                 LDA     #$FF            ; Map all peripherals to ZP
-                STA     DECODER_ZPLR    
+                STA     DECODER_RLR    
                 LDA     #$1B            ; Begin with escape.
 NOTCR:
                 CMP     #$08            ; Backspace key?

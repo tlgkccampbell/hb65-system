@@ -12,8 +12,8 @@ PROC_CURRENT_IX         := $01
 PROC_METADATA_STATES    := $0300
 PROC_METADATA_REG_PC    := $0310
 PROC_METADATA_REG_DCR   := $0330
-PROC_METADATA_REG_ALR   := $0340
-PROC_METADATA_REG_ZPLR  := $0350
+PROC_METADATA_REG_MLR   := $0340
+PROC_METADATA_REG_RLR   := $0350
 
 ; Process management routines
 .SEGMENT "BIOS"
@@ -44,8 +44,8 @@ PROC_INIT_TBL:
 :   DEX
     STZ PROC_METADATA_STATES, X
     STZ PROC_METADATA_REG_DCR, X
-    STZ PROC_METADATA_REG_ALR, X
-    STA PROC_METADATA_REG_ZPLR, X
+    STZ PROC_METADATA_REG_MLR, X
+    STA PROC_METADATA_REG_RLR, X
     BNE :-
     STZ DECODER_SCR
     RTS
@@ -96,7 +96,7 @@ PROC_DONE:
     BIT PROC_METADATA_STATES, X
     BPL :-
 
-    STX DECODER_WRBR                ; Switch to the selected process' memory space
+    STX DECODER_WBR                ; Switch to the selected process' memory space
     JSR _PROC_LOAD_REGISTERS        ; and load its registers
 
     TXA                             ; Multiply X by 2
@@ -161,7 +161,7 @@ PROC_FAIL:
     LDA SYSCDAT_JMP_ADDR            ; Copy the jump address into registers
     LDY SYSCDAT_JMP_ADDR+1          ; so that we don't lose them when banking WRAM.
 
-    STX DECODER_WRBR                ; Switch to the new memory space.
+    STX DECODER_WBR                 ; Switch to the new memory space.
 
     STA SYSCDAT_JMP_ADDR            ; Copy the jump address into the newly-exposed
     STY SYSCDAT_JMP_ADDR+1          ; shared data page in WRAM.
@@ -183,10 +183,10 @@ FAILED:
 .PROC _PROC_SAVE_REGISTERS
     LDA DECODER_DCR
     STA PROC_METADATA_REG_DCR, X
-    LDA DECODER_ALR
-    STA PROC_METADATA_REG_ALR, X
-    LDA DECODER_ZPLR
-    STA PROC_METADATA_REG_ZPLR, X
+    LDA DECODER_MLR
+    STA PROC_METADATA_REG_MLR, X
+    LDA DECODER_RLR
+    STA PROC_METADATA_REG_RLR, X
     RTS
 .ENDPROC
 
@@ -197,9 +197,9 @@ FAILED:
 .PROC _PROC_LOAD_REGISTERS
     LDA PROC_METADATA_REG_DCR, X
     STA DECODER_DCR
-    LDA PROC_METADATA_REG_ALR, X
-    STA DECODER_ALR
-    LDA PROC_METADATA_REG_ZPLR, X
-    STA DECODER_ZPLR
+    LDA PROC_METADATA_REG_MLR, X
+    STA DECODER_MLR
+    LDA PROC_METADATA_REG_RLR, X
+    STA DECODER_RLR
     RTS
 .ENDPROC

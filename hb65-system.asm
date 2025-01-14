@@ -27,11 +27,11 @@ HandleRES:
     LDA #$00
     STA DECODER_DCR
     LDA #$00
-    STA DECODER_ALR
+    STA DECODER_MLR
     LDA #$FF
-    STA DECODER_ZPLR
+    STA DECODER_RLR
     LDA #$00
-    STA DECODER_WRBR
+    STA DECODER_WBR
     ; Initialize the system process
     JSR PROC_INIT
     JSR PROC_NEW
