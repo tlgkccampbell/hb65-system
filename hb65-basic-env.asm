@@ -42,8 +42,6 @@ LAB_mess:
     STZ     DECODER_MLR
     LDA     #$40
     STA     DECODER_RLR
-    LDA     #$11
-    STA     DECODER_WBR
     ; set up vectors and interrupt code, copy them to page 2
     LDY     #END_CODE - LAB_vec ; set index/count
 LAB_stlp:

@@ -2,9 +2,8 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "System ROM for the HB65 Microcomputer System"
 
-.IMPORT     EHBASIC_INIT, EHBASIC_NMI_HANDLER, EHBASIC_IRQ_HANDLER
-.IMPORT     PROC_INIT, PROC_NEW, PROC_SWITCH, UART_INIT
-.IMPORT     SYSCDAT_JMP_ADDR
+.IMPORT     EHBASIC_INIT, EHBASIC_NMI_HANDLER, EHBASIC_IRQ_HANDLER, WOZ_ENTER
+.IMPORT     PROC_INIT, PROC_NEW, PROC_YIELD, UART_INIT
 
 .INCLUDE    "hb65-system.inc"
 
@@ -32,18 +31,22 @@ HandleRES:
     STA DECODER_RLR
     LDA #$00
     STA DECODER_WBR
-    ; Initialize the system process
-    JSR PROC_INIT
-    JSR PROC_NEW
- STADDR :+, SYSCDAT_JMP_ADDR
-    JSR PROC_SWITCH
+    STZ DECODER_SCR
+    STZ DECODER_AFR
     ; Initialize peripherals
-:   JSR UART_INIT
-    ; Initialize the EhBASIC process
+    JSR UART_INIT
+    ; Initialize process management
+    JSR PROC_INIT
+    ; Initialize the system process
+ STADDR HandleSYS, DECODER_SR0
     JSR PROC_NEW
- STADDR EHBASIC_INIT, SYSCDAT_JMP_ADDR
-    JSR PROC_SWITCH
-    JMP HandleRES
+    ; Initialize the EhBASIC process
+ STADDR EHBASIC_INIT, DECODER_SR0
+    JSR PROC_NEW
+
+HandleSYS:
+    JSR PROC_YIELD
+    JMP HandleSYS
 
 ; CPU vector table
 .SEGMENT "VECTORS"

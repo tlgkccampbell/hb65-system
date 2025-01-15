@@ -5,10 +5,9 @@
 .INCLUDE    "hb65-system.inc"
 
 .IMPORTZP   LAB_WARM
-.IMPORT     PROC_NEW, PROC_TERM, PROC_SWITCH
-.IMPORT     SYSCDAT_JMP_ADDR
+.IMPORT     PROC_NEW, PROC_TERM, PROC_YIELD
 
-.EXPORT     WOZ_ENTER, WOZ_EXIT
+.EXPORT     WOZ_ENTER, WOZ_TERM
 
 ; Wozmon memory locations
 XAML    = $24   ; Last "opened" location Low
@@ -24,13 +23,12 @@ IN      = $0300 ; Input buffer
 ; Wozmon code
 .SEGMENT "WOZMON"
 
-WOZ_EXIT:       JSR     PROC_TERM       ; Kill the wozmon process and
-                                        ; switch back to the EhBASIC process
-WOZ_ENTER:      JSR     PROC_NEW        ; Allocate a new process for wozmon
-             STADDR     :+, SYSCDAT_JMP_ADDR
-                JSR     PROC_SWITCH
+WOZ_TERM:       JSR     PROC_TERM
+WOZ_INIT:    STADDR WOZ_ENTER, DECODER_SR0
+                JSR     PROC_NEW
+                JSR     PROC_YIELD
                 RTS
-:               LDA     #$0F            ; Map all peripheral memories
+WOZ_ENTER:      LDA     #$0F            ; Map all peripheral memories
                 STA     DECODER_MLR     
                 LDA     #$FF            ; Map all peripherals to ZP
                 STA     DECODER_RLR    
