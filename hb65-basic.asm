@@ -70,6 +70,9 @@
 .IFDEF EHBASIC_CONDENSED_SIGNON
       .OUT "EhBASIC: Enabled condensed signon message."
 .ENDIF
+.IFDEF EHBASIC_HB65_EXTENSIONS
+      .OUT "EhBASIC: Enabled HB65 extensions."
+.ENDIF
 
 ; zero page use ..
 ZP_START    = EHBASIC_ZP_START
@@ -381,9 +384,17 @@ TK_BITCLR         = TK_BITSET+1     ; BITCLR token
 TK_IRQ            = TK_BITCLR+1     ; IRQ token
 TK_NMI            = TK_IRQ+1        ; NMI token
 
+; HB65 extensions
+.IFDEF EHBASIC_HB65_EXTENSIONS
+TK_SYSC           = TK_NMI+1      ; SYSC token
+TK_TAB_PREV       = TK_SYSC
+.ELSE
+TK_TAB_PREV       = TK_NMI
+.ENDIF
+
 ; secondary command tokens, can't start a statement
 
-TK_TAB            = TK_NMI+1        ; TAB token
+TK_TAB            = TK_TAB_PREV+1   ; TAB token
 TK_ELSE           = TK_TAB+1        ; ELSE token
 TK_TO             = TK_ELSE+1       ; TO token
 TK_FN             = TK_TO+1         ; FN token
@@ -8241,6 +8252,9 @@ LAB_CTBL
       .word LAB_BITCLR-1      ; BITCLR          new command
       .word LAB_IRQ-1         ; IRQ             new command
       .word LAB_NMI-1         ; NMI             new command
+.IFDEF EHBASIC_HB65_EXTENSIONS
+      .word LAB_SYSC-1        ; SYSC
+.ENDIF
 
 ; function pre process routine table
 
@@ -8643,6 +8657,10 @@ LBB_STRS
       .byte "TR$(",TK_STRS    ; STR$(
 LBB_SWAP
       .byte "WAP",TK_SWAP     ; SWAP
+.IFDEF EHBASIC_HB65_EXTENSIONS
+LBB_SYSC
+      .byte "YSC",TK_SYSC     ; SYSC
+.ENDIF
       .byte $00
 TAB_ASCT
 LBB_TAB
@@ -8776,6 +8794,10 @@ LAB_KEYT
       .word LBB_IRQ           ; IRQ
       .byte 3,'N'
       .word LBB_NMI           ; NMI
+.IFDEF EHBASIC_HB65_EXTENSIONS
+      .byte 4,'S'
+      .word LBB_SYSC          ; SYSC
+.ENDIF
 
 ; secondary commands (can't start a statement)
 
@@ -8967,5 +8989,9 @@ LAB_RMSG    .byte $0D,$0A,"Ready.",$0D,$0A,$00
 
 LAB_IMSG    .byte " Extra ignored",$0D,$0A,$00
 LAB_REDO    .byte " Redo from start",$0D,$0A,$00
+
+.IFDEF EHBASIC_HB65_EXTENSIONS
+.INCLUDE "hb65-basic-ext.inc"
+.ENDIF
 
 AA_end_basic

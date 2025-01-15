@@ -7,7 +7,7 @@
 .IMPORTZP   LAB_WARM
 .IMPORT     PROC_NEW, PROC_TERM, PROC_YIELD
 
-.EXPORT     WOZ_ENTER, WOZ_TERM
+.EXPORT     WOZ_INIT, WOZ_TERM
 
 ; Wozmon memory locations
 XAML    = $24   ; Last "opened" location Low
