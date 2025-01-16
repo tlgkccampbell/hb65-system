@@ -2,13 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS process management routines"
 
-.IMPORT     SYSCDAT_JMP_ADDR, SYSCDAT_RET_ADDR
-
 .INCLUDE    "hb65-system.inc"
-
-; TODO: Merge SWITCH into YIELD
-; TODO: How are we going to handle interrupts? (specifically, NMI)?
-;   do we include IRQEN and NMIEN in the system context? maybe!
 
 ; Process metadata table
 PROC_MAX_COUNT          := $00

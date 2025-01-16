@@ -12,6 +12,17 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "make deployxmem",
+            "type": "process",
+            "command": "make",
+            "args": ["deployxmem"],
+            "problemMatcher": [],
+            "group": {
+                "kind": "none",
+                "isDefault": true
+            }
         }
     ]
 }
