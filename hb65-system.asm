@@ -28,26 +28,26 @@
 .PROC BRK_HANDLER
     ; Move the return address into a scratch register.
     LDA $0105, X
-    STA DECODER_SR4L
+    STA DECODER_SR3L
     LDA $0106, X
-    STA DECODER_SR4H
+    STA DECODER_SR3H
 
     ; Decrement the return address.
-    LDA DECODER_SR4L
+    LDA DECODER_SR3L
     BNE :+
-    DEC DECODER_SR4H
-  : DEC DECODER_SR4L
+    DEC DECODER_SR3H
+  : DEC DECODER_SR3L
 
     ; Read the padding byte into A.
-    LDA (DECODER_SR4)
+    LDA (DECODER_SR3)
     PHA
     JSR GPIO_SET_LEDS
 
     ; Decrement the return address again.
-    LDA DECODER_SR4L
+    LDA DECODER_SR3L
     BNE :+
-    DEC DECODER_SR4H
-  : DEC DECODER_SR4L
+    DEC DECODER_SR3H
+  : DEC DECODER_SR3L
   
     ; Retrieve the padding byte, set the front panel
     ; LEDs to that value, and output an error message
