@@ -46,3 +46,42 @@ SYSCALLS_TIME_DELAY_50MS    = SYSCALLS_TIME_DELAY_1MS + $02
 SYSCALLS_GPIO_BUZZER_BEEP   = SYSCALLS_TIME_DELAY_50MS + $02
 .IMPORT GPIO_BUZZER_BEEP
 .WORD GPIO_BUZZER_BEEP
+
+; BIOS helper functions
+.SEGMENT "BIOS"
+
+; JMP_SRA procedure
+; Modifies: n/a
+;
+; Jumps to the procedure pointed to by Scratch Register A.
+.PROC JMP_SRA
+    JMP (DECODER_SRA)
+.ENDPROC
+.EXPORT JMP_SRA
+
+; JMP_SRB procedure
+; Modifies: n/a
+;
+; Jumps to the procedure pointed to by Scratch Register B.
+.PROC JMP_SRB
+    JMP (DECODER_SRB)
+.ENDPROC
+.EXPORT JMP_SRB
+
+; JMP_SRC procedure
+; Modifies: n/a
+;
+; Jumps to the procedure pointed to by Scratch Register C.
+.PROC JMP_SRC
+    JMP (DECODER_SRC)
+.ENDPROC
+.EXPORT JMP_SRC
+
+; JMP_SRD procedure
+; Modifies: n/a
+;
+; Jumps to the procedure pointed to by Scratch Register D.
+.PROC JMP_SRD
+    JMP (DECODER_SRD)
+.ENDPROC
+.EXPORT JMP_SRD

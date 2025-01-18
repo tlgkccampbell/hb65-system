@@ -6,7 +6,8 @@
 .IMPORT     UART_INIT
 .IMPORT     PROC_INIT, PROC_NEW, PROC_YIELD
 .IMPORT     EHBASIC_INIT
-.IMPORT     GPIO_LCD_PUTSTR_IMM, GPIO_LCD_PUTHEX, GPIO_LCD_PUTHEX16
+.IMPORT     STRM_PUTSTR_IMM, STRM_PUTHEX, STRM_PUTHEX16
+.IMPORT     JMP_SRA
 
 .INCLUDE    "hb65-system.inc"
 
@@ -27,61 +28,64 @@
 .PROC BRK_HANDLER
     ; Move the return address into a scratch register.
     LDA $0105, X
-    STA DECODER_SRAL
+    STA DECODER_SRCL
     LDA $0106, X
-    STA DECODER_SRAH
+    STA DECODER_SRCH
 
     ; Decrement the return address.
-    LDA DECODER_SRAL
+    LDA DECODER_SRCL
     BNE :+
-    DEC DECODER_SRAH
-  : DEC DECODER_SRAL
+    DEC DECODER_SRCH
+  : DEC DECODER_SRCL
 
     ; Read the padding byte into A.
-    LDA (DECODER_SRA)
+    LDA (DECODER_SRC)
     PHA
     JSR GPIO_SET_LEDS
 
     ; Decrement the return address again.
-    LDA DECODER_SRAL
+    LDA DECODER_SRCL
     BNE :+
-    DEC DECODER_SRAH
-  : DEC DECODER_SRAL
-  
+    DEC DECODER_SRCH
+  : DEC DECODER_SRCL
+
+    ; Set up our output stream.
+    JSR GPIO_LCD_CLR
+ STADDR GPIO_LCD_PUTC, DECODER_SRA
+
     ; Retrieve the padding byte, set the front panel
     ; LEDs to that value, and output an error message
     ; to the LCD panel.
-    JSR GPIO_LCD_CLR
-    JSR GPIO_LCD_PUTSTR_IMM
+    JSR STRM_PUTSTR_IMM
     .BYTE "Break $", 0
     PLA
-    JSR GPIO_LCD_PUTHEX
-    JSR GPIO_LCD_PUTSTR_IMM
+    JSR STRM_PUTHEX
+    JSR STRM_PUTSTR_IMM
     .BYTE " at $", 0
-    JSR GPIO_LCD_PUTHEX16
+    JSR STRM_PUTHEX16
 
     LDA #$40
     JSR GPIO_LCD_SET_DDRAM_ADDR
-    JSR GPIO_LCD_PUTSTR_IMM
+    JSR STRM_PUTSTR_IMM
     .BYTE "A: $", 0
     PLA
-    JSR GPIO_LCD_PUTHEX
+    JSR STRM_PUTHEX
 
     LDA #$14
     JSR GPIO_LCD_SET_DDRAM_ADDR
-    JSR GPIO_LCD_PUTSTR_IMM
+    JSR STRM_PUTSTR_IMM
     .BYTE "X: $", 0
     PLX
     TXA
-    JSR GPIO_LCD_PUTHEX
+    JSR STRM_PUTHEX
 
     LDA #$54
     JSR GPIO_LCD_SET_DDRAM_ADDR
-    JSR GPIO_LCD_PUTSTR_IMM
+    JSR STRM_PUTSTR_IMM
     .BYTE "Y: $", 0
     PLY
     TYA
-    JSR GPIO_LCD_PUTHEX
+    JSR STRM_PUTHEX
 
     ; Halt the processor.
     JSR GPIO_BUZZER_BEEP
