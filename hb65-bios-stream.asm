@@ -9,30 +9,63 @@
 ; Stream routines
 .SEGMENT "BIOS"
 
+; LUT_HEXCHARS
 ; A lookup table mapping integer values to hexadecimal characters.
 LUT_HEXCHARS:
-    .BYTE '0'
-    .BYTE '1'
-    .BYTE '2'
-    .BYTE '3'
-    .BYTE '4'
-    .BYTE '5'
-    .BYTE '6'
-    .BYTE '7'
-    .BYTE '8'
-    .BYTE '9'
-    .BYTE 'A'
-    .BYTE 'B'
-    .BYTE 'C'
-    .BYTE 'D'
-    .BYTE 'E'
-    .BYTE 'F'
+  .BYTE '0'
+  .BYTE '1'
+  .BYTE '2'
+  .BYTE '3'
+  .BYTE '4'
+  .BYTE '5'
+  .BYTE '6'
+  .BYTE '7'
+  .BYTE '8'
+  .BYTE '9'
+  .BYTE 'A'
+  .BYTE 'B'
+  .BYTE 'C'
+  .BYTE 'D'
+  .BYTE 'E'
+  .BYTE 'F'
+
+; STRM_PUTNL
+; Modifies: n/a
+; 
+; Writes a newline character using the PUTC procedure pointed to by Scratch Register A.
+.PROC STRM_PUTNL
+  PHA
+  LDA #$0A
+  JSR JMP_SRA
+  PLA
+  RTS
+.ENDPROC
+.EXPORT STRM_PUTNL
+
+; STRM_PUTSTR procedure
+; Modifies: ?
+;
+; Writes a string using the PUTC procedure pointed to by Scratch Register A.
+; The null-terminated string data should be pointed to by Scratch Register B.
+.PROC STRM_PUTSTR
+    LDY #$00
+  LOOP:
+    LDA (DECODER_SRB), Y
+    BEQ :+
+    PHY
+    JSR JMP_SRA
+    PLY
+    INY
+    JMP LOOP
+  : RTS
+.ENDPROC
+.EXPORT STRM_PUTSTR
 
 ; STRM_PUTSTR_IMM procedure
 ; Modifies: A, X, SRB, flags
 ;
 ; Writes a string using the PUTC procedure pointed to by Scratch Register A.
-; The string data should be inlined immediately after the call to this procedure and null-terminated.
+; The null-terminated string data should be inlined immediately after the call to this procedure.
 .PROC STRM_PUTSTR_IMM
     PLA
     STA DECODER_SRBL

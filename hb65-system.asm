@@ -2,16 +2,30 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "System ROM for the HB65 Microcomputer System"
 
-.IMPORT     GPIO_INIT, GPIO_SET_LEDS, GPIO_BUZZER_BEEP, GPIO_LCD_CLR, GPIO_LCD_PUTC, GPIO_LCD_SET_DDRAM_ADDR
+.IMPORT     GPIO_INIT, GPIO_SET_LEDS, GPIO_BUZZER_BEEP, GPIO_LCD_CLR, GPIO_LCD_PUTC
 .IMPORT     UART_INIT
 .IMPORT     PROC_INIT, PROC_NEW, PROC_YIELD
 .IMPORT     EHBASIC_INIT
-.IMPORT     STRM_PUTSTR_IMM, STRM_PUTHEX, STRM_PUTHEX16
+.IMPORT     STRM_PUTNL, STRM_PUTSTR, STRM_PUTSTR_IMM, STRM_PUTHEX, STRM_PUTHEX16
 .IMPORT     JMP_SRA
 
 .INCLUDE    "hb65-system.inc"
 
 ; Interrupt handlers
+.SEGMENT "BIOS"
+
+; LUT_BRK_MSG
+; A lookup table containing the error messages for different break conditions.
+LUT_BRK_MSG:
+    .WORD BRK_MSG_GENERAL_ERROR
+LUT_BRK_MSG_END:
+
+        ; "--------------------" 
+BRK_MSG_UNKNOWN:
+    .BYTE "Unknown error", $00
+BRK_MSG_GENERAL_ERROR:
+    .BYTE "General system error", $00
+BRK_MSG_COUNT = (LUT_BRK_MSG_END - LUT_BRK_MSG) / 2
 
 ; NMI_HANDLER procedure
 ; Modifies: n/a
@@ -27,9 +41,9 @@
 ; Handles software interrupts. Halts the processor.
 .PROC BRK_HANDLER
     ; Move the return address into a scratch register.
-    LDA $0105, X
+    LDA $010A, X
     STA DECODER_SRCL
-    LDA $0106, X
+    LDA $010B, X
     STA DECODER_SRCH
 
     ; Decrement the return address.
@@ -38,9 +52,9 @@
     DEC DECODER_SRCH
   : DEC DECODER_SRCL
 
-    ; Read the padding byte into A.
+    ; Read the padding byte into Scratch Register 6.
     LDA (DECODER_SRC)
-    PHA
+    STA DECODER_SR6
     JSR GPIO_SET_LEDS
 
     ; Decrement the return address again.
@@ -57,35 +71,84 @@
     ; LEDs to that value, and output an error message
     ; to the LCD panel.
     JSR STRM_PUTSTR_IMM
-    .BYTE "Break $", 0
-    PLA
+    .BYTE "Break $", $00
+    LDA DECODER_SR6
     JSR STRM_PUTHEX
     JSR STRM_PUTSTR_IMM
-    .BYTE " at $", 0
+    .BYTE " at $", $00
     JSR STRM_PUTHEX16
+    JSR STRM_PUTNL
 
-    LDA #$40
-    JSR GPIO_LCD_SET_DDRAM_ADDR
+    ; Output the error message.
+    LDA DECODER_SR6
+    CMP #BRK_MSG_COUNT
+    BCC LOAD_BRK_MESSAGE
+    LDA #<BRK_MSG_UNKNOWN
+    STA DECODER_SRBL
+    LDA #>BRK_MSG_UNKNOWN
+    STA DECODER_SRBH
+    JMP PUTS_BRK_MESSAGE
+LOAD_BRK_MESSAGE:
+    LDX DECODER_SR6
+    LDA LUT_BRK_MSG, X
+    STA DECODER_SRBL
+    INX
+    LDA LUT_BRK_MSG, X
+    STA DECODER_SRBH
+    JMP PUTS_BRK_MESSAGE
+PUTS_BRK_MESSAGE:
+    JSR STRM_PUTSTR
+    JSR STRM_PUTNL
+
+    ; Output the Decoder Control Register.
     JSR STRM_PUTSTR_IMM
-    .BYTE "A: $", 0
+    .BYTE "D: $", $00
     PLA
     JSR STRM_PUTHEX
 
-    LDA #$14
-    JSR GPIO_LCD_SET_DDRAM_ADDR
+    ; Output the Memory Layout Register.
     JSR STRM_PUTSTR_IMM
-    .BYTE "X: $", 0
-    PLX
-    TXA
+    .BYTE " $", $00
+    PLA
     JSR STRM_PUTHEX
 
-    LDA #$54
-    JSR GPIO_LCD_SET_DDRAM_ADDR
+    ; Output the Register Layout Register.
     JSR STRM_PUTSTR_IMM
-    .BYTE "Y: $", 0
-    PLY
-    TYA
+    .BYTE " $", $00
+    PLA
     JSR STRM_PUTHEX
+
+    ; Output the WRAM Banking Register.
+    JSR STRM_PUTSTR_IMM
+    .BYTE " $", $00
+    PLA
+    JSR STRM_PUTHEX
+    JSR STRM_PUTNL
+
+    ; Output the STK register.
+    JSR STRM_PUTSTR_IMM
+    .BYTE "C: $", $00
+    PLA
+    JSR STRM_PUTHEX
+
+    ; Output the A register.
+    JSR STRM_PUTSTR_IMM
+    .BYTE " $", $00
+    PLA
+    JSR STRM_PUTHEX
+
+    ; Output the X register.
+    JSR STRM_PUTSTR_IMM
+    .BYTE " $", $00
+    PLA
+    JSR STRM_PUTHEX
+
+    ; Output the Y register.
+    JSR STRM_PUTSTR_IMM
+    .BYTE " $", $00
+    PLA
+    JSR STRM_PUTHEX
+    JSR STRM_PUTNL
 
     ; Halt the processor.
     JSR GPIO_BUZZER_BEEP
@@ -101,10 +164,20 @@
     PHY
     PHX
     PHA
+    TSX
+    PHX
+    LDA DECODER_WBR
+    PHA
+    LDA DECODER_RLR
+    PHA
+    LDA DECODER_MLR
+    PHA
+    LDA DECODER_DCR
+    PHA
 
     ; Is this a BRK interrupt?
     TSX
-    LDA $0104, X
+    LDA $0109, X
     AND #%00010000
     BEQ IRQ
     JMP BRK_HANDLER
@@ -153,7 +226,7 @@ IRQ:
     LDX #$BB
     LDY #$CC
     BRK
-    .BYTE $AA
+    .BYTE $00
     ; Initialize the EhBASIC process.
  STADDR EHBASIC_INIT, DECODER_SR0
     JSR PROC_NEW
@@ -163,6 +236,7 @@ IRQ:
 
 ; CPU vector table
 .SEGMENT "VECTORS"
+
 .WORD NMI_HANDLER
 .WORD RES_HANDLER
 .WORD IRQ_HANDLER

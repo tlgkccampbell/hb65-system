@@ -6,8 +6,24 @@
 
 .IMPORT     TIME_DELAY_50US, TIME_DELAY_1MS, TIME_DELAY_50MS
 
+; GPIO state
+.SEGMENT "SYSZP"
+
+LCD_COLS                = 20
+LCD_ROWS                = 4
+LCD_CURSOR_X:           .RES 1
+LCD_CURSOR_Y:           .RES 1 
+
 ; GPIO routines
 .SEGMENT "BIOS"
+
+; LUT_LCD_DDRAM_OFFSETS
+; A lookup table mapping LCD rows to DDRAM offsets.
+LUT_LCD_DDRAM_OFFSETS:
+  .BYTE $00
+  .BYTE $40
+  .BYTE $14
+  .BYTE $54
 
 ; _GPIO_CONTROL_PINS enum
 ; Describes the pins of VIA1 PORTB that are used to control the LCD panel.
@@ -270,17 +286,102 @@
 .ENDPROC
 .EXPORT GPIO_LCD_GETC
 
+; _LCD_CHECK_NEWLINE procedure
+; Modifies: X, Y, flags
+; 
+; Checks the contents of A to determine whether it represents a newline character.
+; If so, advances the LCD cursor to the next line. On return, the carry flag indicates
+; whether a newline was handled.
+.PROC _LCD_CHECK_NEWLINE
+    ; Is A equal to \n ($0A)?
+    TAY
+    CMP #$0A
+    BNE RET_NO_NEWLINE
+
+    ; Advance to the next line.
+    SYSCTX_ALTFN_START
+      ADVANCE:
+        ; Make sure we haven't reached the last line of the display.
+        ; If we have, immediately return.
+        LDA LCD_CURSOR_Y
+        CMP #LCD_ROWS-1
+        BEQ ADVANCE_DONE
+
+        ; Advance to the next line and update the cursor position.
+        STZ LCD_CURSOR_X
+        INC LCD_CURSOR_Y
+        JSR _LCD_UPDATE_CURSOR
+      ADVANCE_DONE:
+    SYSCTX_ALTFN_END
+    TYA
+    SEC
+    RTS
+RET_NO_NEWLINE:
+    TYA
+    CLC
+    RTS
+.ENDPROC
+
+; _LCD_CHECK_OVERFLOW procedure
+; Modifies: X, Y, flags
+;
+; Check the LCD cursor position to determine if printing a character will
+; overflow the current line. If so, advances the LCD cursor to the next line.
+; On return, the carry flag is set if the display is full.
+.PROC _LCD_CHECK_OVERFLOW
+    ; Is LCD_CURSOR_X past the edge of the display? If not,
+    ; clear the carry flag and return.
+    TAY
+    SYSCTX_ALTFN_START
+        LDA LCD_CURSOR_X
+        CMP #LCD_COLS
+        BEQ TRY_ADVANCE
+    SYSCTX_ALTFN_END
+    TYA
+    CLC
+    RTS
+
+    ; Attempt to advance to the next line, if there's enough room.
+  TRY_ADVANCE:
+        ; Make sure we haven't reached the last line of the display.
+        ; If we have, set the carry flag and return.
+        LDA LCD_CURSOR_Y
+        CMP #LCD_ROWS-1
+        BNE ADVANCE
+    SYSCTX_ALTFN_END
+        TYA
+        SEC
+        RTS
+      ADVANCE:
+        STZ LCD_CURSOR_X
+        INC LCD_CURSOR_Y
+        JSR _LCD_UPDATE_CURSOR
+    SYSCTX_ALTFN_END
+    TYA
+    CLC
+    RTS
+.ENDPROC
+
 ; GPIO_LCD_PUTC procedure
-; Modifies: A, X, SR7, flags
+; Modifies: A, X, Y, SR7, flags
 ;
 ; Writes the byte passed in the A register to the LCD panel.
 .PROC GPIO_LCD_PUTC
-    ; Wait for the LCD to become ready.
+    ; Advance the cursor if necessary.
+    JSR _LCD_CHECK_NEWLINE
+    BCS DONE
+    JSR _LCD_CHECK_OVERFLOW
+    BCS DONE
+
+    ; Output the character in A.
+OUTPUT:
     PHA
+    ; Wait for the LCD to become ready.
     JSR GPIO_LCD_WAIT
     JSR GPIO_LCD_START_DATAWR
     SYSCTX_ALTFN_START
         PLA
+        INC LCD_CURSOR_X
       NO_WAIT:
         ; Present the high nibble.
         PHA
@@ -299,6 +400,7 @@
         STA DECODER_SR7
         JSR _LCD_TOGGLE_ENABLE
     SYSCTX_ALTFN_END
+  DONE:
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_PUTC
@@ -315,27 +417,13 @@
     LDA #%00000001
     JSR GPIO_LCD_PUTC::NO_WAIT
 
+    STZ LCD_CURSOR_X
+    STZ LCD_CURSOR_Y
+    JSR _LCD_UPDATE_CURSOR
+
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_CLR
-
-; GPIO_LCD_SET_DDRAM_SDDR
-; Modifies: A, X, flags
-; 
-; Sets the LCD panel's current DDRAM address to the value stored in the A register.
-.PROC GPIO_LCD_SET_DDRAM_ADDR
-    PHA
-    JSR GPIO_LCD_WAIT
-    JSR GPIO_LCD_START_INSTRWR
-
-    SYSCTX_ALTFN_START
-    PLA
-    ORA #%10000000
-    JSR GPIO_LCD_PUTC::NO_WAIT
-
-    RTS
-.ENDPROC
-.EXPORT GPIO_LCD_SET_DDRAM_ADDR
 
 ; GPIO_INIT procedure
 ; Modifies; A, flags
@@ -349,6 +437,8 @@
     SYSCTX_ALTFN_END
 
     ; Initialize the character LCD.
+    STZ LCD_CURSOR_X
+    STZ LCD_CURSOR_Y
     JSR GPIO_LCD_DISABLE_LIGHT
     JSR GPIO_LCD_START_INSTRWR
 
@@ -406,3 +496,23 @@
     RTS
 .ENDPROC
 .EXPORT GPIO_INIT
+
+; _LCD_UPDATE_CURSOR
+; Modifies: A, X, flags
+; 
+; Sets the LCD panel's current DDRAM address to match the values stored
+; for the cursor in LCD_CURSOR_X and LCD_CURSOR_Y.
+.PROC _LCD_UPDATE_CURSOR
+    JSR GPIO_LCD_WAIT
+    JSR GPIO_LCD_START_INSTRWR
+
+    SYSCTX_ALTFN_START
+    LDX LCD_CURSOR_Y
+    LDA LUT_LCD_DDRAM_OFFSETS, X
+    ADC LCD_CURSOR_X
+
+    ORA #%10000000
+    JSR GPIO_LCD_PUTC::NO_WAIT
+
+    RTS
+.ENDPROC
