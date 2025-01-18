@@ -24,11 +24,11 @@
 ; Sets the state of the front panel LEDs to match the value passed in the A register.
 .PROC GPIO_SET_LEDS
     PHA
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Set PORTA on VIA1
         PLA
         STA SYSTEM_VIA_ORA
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_SET_LEDS
@@ -115,7 +115,7 @@
 ;
 ; Prepares VIA1 to read data from the LCD panel.
 .PROC GPIO_LCD_START_DATARD
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Set lower nibble of VIA1 PORTB to inputs.
         LDA #$F0
         STA SYSTEM_VIA_DDRB
@@ -125,7 +125,7 @@
         ORA #(1 << _LCD_CONTROL_PINS::RW)
         ORA #(1 << _LCD_CONTROL_PINS::RS)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_START_DATARD
@@ -135,7 +135,7 @@
 ;
 ; Prepares VIA1 to write data to the LCD panel.
 .PROC GPIO_LCD_START_DATAWR
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Set lower nibble of VIA1 PORTB to outputs.
         LDA #$FF
         STA SYSTEM_VIA_DDRB
@@ -145,7 +145,7 @@
         AND #<~(1 << _LCD_CONTROL_PINS::RW)
         ORA #(1 << _LCD_CONTROL_PINS::RS)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_START_DATAWR
@@ -155,7 +155,7 @@
 ;
 ; Prepares VIA1 to read instructions from the LCD panel.
 .PROC GPIO_LCD_START_INSTRRD
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Set lower nibble of VIA1 PORTB to inputs.
         LDA #$F0
         STA SYSTEM_VIA_DDRB
@@ -165,7 +165,7 @@
         ORA #(1 << _LCD_CONTROL_PINS::RW)
         AND #<~(1 << _LCD_CONTROL_PINS::RS)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_START_INSTRWR
@@ -175,7 +175,7 @@
 ;
 ; Prepares VIA1 to write instructions to the LCD panel.
 .PROC GPIO_LCD_START_INSTRWR
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Set lower nibble of VIA1 PORTB to outputs.
         LDA #$FF
         STA SYSTEM_VIA_DDRB
@@ -185,7 +185,7 @@
         AND #<~(1 << _LCD_CONTROL_PINS::RW)
         AND #<~(1 << _LCD_CONTROL_PINS::RS)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_START_INSTRWR
@@ -195,11 +195,11 @@
 ;
 ; Turns on the LCD's white backlight.
 .PROC GPIO_LCD_ENABLE_LIGHT
-    ALTFN_START
+    SYSCTX_ALTFN_START
         LDA SYSTEM_VIA_ORB
         AND #<~(1 << _LCD_CONTROL_PINS::BL)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_ENABLE_LIGHT
@@ -209,11 +209,11 @@
 ;
 ; Turns off the LCD's white backlight.
 .PROC GPIO_LCD_DISABLE_LIGHT
-    ALTFN_START
+    SYSCTX_ALTFN_START
         LDA SYSTEM_VIA_ORB
         ORA #(1 << _LCD_CONTROL_PINS::BL)
         STA SYSTEM_VIA_ORB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_DISABLE_LIGHT
@@ -223,26 +223,26 @@
 ;
 ; Waits for the LCD panel to become ready.
 .PROC GPIO_LCD_WAIT
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Preserve the current state of the LCD port.
         LDA SYSTEM_VIA_DDRB
         PHA
         LDA SYSTEM_VIA_ORB
         PHA
-    ALTFN_END
+    SYSCTX_ALTFN_END
 
     ; Read until bit 7 is clear.
   : JSR GPIO_LCD_GETC
     BIT #%10000000
     BMI :-
 
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Restore the LCD port's state.
         PLA
         STA SYSTEM_VIA_ORB
         PLA
         STA SYSTEM_VIA_DDRB
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_WAIT
@@ -253,7 +253,7 @@
 ; Reads a byte from the LCD panel and places it into the A register.
 .PROC GPIO_LCD_GETC
     JSR GPIO_LCD_START_INSTRRD
-    ALTFN_START
+    SYSCTX_ALTFN_START
         ; Read the high nibble.
         JSR _LCD_READ_NIBBLE
         ASL
@@ -265,7 +265,7 @@
         ; Read the low nibble.
         JSR _LCD_READ_NIBBLE
         ORA DECODER_SR0
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_GETC
@@ -279,7 +279,7 @@
     PHA
     JSR GPIO_LCD_WAIT
     JSR GPIO_LCD_START_DATAWR
-    ALTFN_START
+    SYSCTX_ALTFN_START
         PLA
       NO_WAIT:
         ; Present the high nibble.
@@ -298,7 +298,7 @@
         AND #$0F
         STA DECODER_SR0
         JSR _LCD_TOGGLE_ENABLE
-    ALTFN_END
+    SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_PUTC
@@ -311,7 +311,7 @@
     JSR GPIO_LCD_WAIT
     JSR GPIO_LCD_START_INSTRWR
 
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%00000001
     JSR GPIO_LCD_PUTC::NO_WAIT
 
@@ -328,7 +328,7 @@
     JSR GPIO_LCD_WAIT
     JSR GPIO_LCD_START_INSTRWR
 
-    ALTFN_START
+    SYSCTX_ALTFN_START
     PLA
     ORA #%10000000
     JSR GPIO_LCD_PUTC::NO_WAIT
@@ -343,17 +343,17 @@
 ; Initializes the system's GPIO devices.
 .PROC GPIO_INIT
     ; Initialize VIA1.
-    ALTFN_START
+    SYSCTX_ALTFN_START
         LDA #$FF
         STA SYSTEM_VIA_DDRA
-    ALTFN_END
+    SYSCTX_ALTFN_END
 
     ; Initialize the character LCD.
     JSR GPIO_LCD_DISABLE_LIGHT
     JSR GPIO_LCD_START_INSTRWR
 
     ; Function set (8-bit mode, 1st try)
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%0011
     JSR GPIO_LCD_PUTC::WRITE_NIBBLE
     JSR TIME_DELAY_1MS
@@ -363,43 +363,43 @@
     JSR TIME_DELAY_1MS
 
     ; Function set (8-bit mode, 2nd try)
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%0011
     JSR GPIO_LCD_PUTC::WRITE_NIBBLE
     JSR TIME_DELAY_50US
 
     ; Function set (8-bit mode, 3rd try)
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%0011
     JSR GPIO_LCD_PUTC::WRITE_NIBBLE
     JSR TIME_DELAY_50US
 
     ; Function set (4-bit mode)
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%0010
     JSR GPIO_LCD_PUTC::WRITE_NIBBLE
     JSR TIME_DELAY_50US
 
     ; Function set (4 lines, 5x8 font)
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%00101000
     JSR GPIO_LCD_PUTC::NO_WAIT
     JSR TIME_DELAY_1MS
 
     ; Display on, cursor on, blinking on
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%00001111
     JSR GPIO_LCD_PUTC::NO_WAIT
     JSR TIME_DELAY_1MS
 
     ; Clear display
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%00000001
     JSR GPIO_LCD_PUTC::NO_WAIT
     JSR TIME_DELAY_1MS
 
     ; Entry mode set
-    ALTFN_START
+    SYSCTX_ALTFN_START
     LDA #%00000110
     JSR GPIO_LCD_PUTC::NO_WAIT
     JSR TIME_DELAY_1MS
