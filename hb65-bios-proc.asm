@@ -91,9 +91,9 @@ PROC_METADATA_PC        := $0350
         PHA
         ASL
         TAX
-        LDA DECODER_SR0L
+        LDA DECODER_SRAL
         STA PROC_METADATA_PC, X
-        LDA DECODER_SR0H
+        LDA DECODER_SRAH
         INX
         STA PROC_METADATA_PC, X
         PLA
@@ -104,7 +104,7 @@ PROC_NEW_DONE:
 .EXPORT PROC_NEW
 
 ; PROC_YIELD procedure
-; Modifies: A, X, Y, flags
+; Modifies: A, X, Y, SRA, flags
 ;
 ; Yields execution to the process scheduler, allowing another idle process
 ; to resume execution.
@@ -116,11 +116,11 @@ PROC_NEW_DONE:
     ; Switch to the system context.
     SYSCTX_START
         ; Store the return address in SR0.
-        STX DECODER_SR0L
-        STY DECODER_SR0H
-        INC DECODER_SR0L
+        STX DECODER_SRAL
+        STY DECODER_SRAH
+        INC DECODER_SRAL
         BNE :+
-        INC DECODER_SR0H
+        INC DECODER_SRAH
       :
 
         ; Update the process' stack pointer in the metadata table.
@@ -141,9 +141,9 @@ PROC_NEW_DONE:
         TXA
         ASL
         TAX
-        LDA DECODER_SR0L    
+        LDA DECODER_SRAL    
         STA PROC_METADATA_PC, X
-        LDA DECODER_SR0H
+        LDA DECODER_SRAH
         INX
         STA PROC_METADATA_PC, X 
 
@@ -178,10 +178,10 @@ PROC_NEW_DONE:
         ASL
         TAX
         LDA PROC_METADATA_PC, X
-        STA DECODER_SR0L
+        STA DECODER_SRAL
         INX
         LDA PROC_METADATA_PC, X
-        STA DECODER_SR0H
+        STA DECODER_SRAH
 
         ; Update the current process index
         PLX
@@ -196,7 +196,7 @@ PROC_NEW_DONE:
     SYSCTX_END
 
     ; Jump to the process' return address.
-    JMP (DECODER_SR0)
+    JMP (DECODER_SRA)
 .ENDPROC
 .EXPORT PROC_YIELD
 

@@ -6,10 +6,9 @@
 .IMPORT     UART_INIT
 .IMPORT     PROC_INIT, PROC_NEW, PROC_YIELD
 .IMPORT     EHBASIC_INIT
-.IMPORT     STRM_NULL, STRM_CLR, STRM_PUTSTR_IMM, GPIO_LCD_PUTSTR_IMM, GPIO_LCD_PUTHEX, GPIO_LCD_PUTHEX16
+.IMPORT     GPIO_LCD_PUTSTR_IMM, GPIO_LCD_PUTHEX, GPIO_LCD_PUTHEX16
 
 .INCLUDE    "hb65-system.inc"
-.INCLUDE    "hb65-bios-stream.inc"
 
 ; Interrupt handlers
 
@@ -28,26 +27,26 @@
 .PROC BRK_HANDLER
     ; Move the return address into a scratch register.
     LDA $0105, X
-    STA DECODER_SR3L
+    STA DECODER_SRAL
     LDA $0106, X
-    STA DECODER_SR3H
+    STA DECODER_SRAH
 
     ; Decrement the return address.
-    LDA DECODER_SR3L
+    LDA DECODER_SRAL
     BNE :+
-    DEC DECODER_SR3H
-  : DEC DECODER_SR3L
+    DEC DECODER_SRAH
+  : DEC DECODER_SRAL
 
     ; Read the padding byte into A.
-    LDA (DECODER_SR3)
+    LDA (DECODER_SRA)
     PHA
     JSR GPIO_SET_LEDS
 
     ; Decrement the return address again.
-    LDA DECODER_SR3L
+    LDA DECODER_SRAL
     BNE :+
-    DEC DECODER_SR3H
-  : DEC DECODER_SR3L
+    DEC DECODER_SRAH
+  : DEC DECODER_SRAL
   
     ; Retrieve the padding byte, set the front panel
     ; LEDs to that value, and output an error message

@@ -71,14 +71,14 @@
 .EXPORT GPIO_BUZZER_BEEP
 
 ; _LCD_TOGGLE_ENABLE
-; Modifies: A, flags,
+; Modifies: A, SR4, flags
 ;
 ; Toggles the LCD's enable line by pulling it high, then low.
 .PROC _LCD_TOGGLE_ENABLE
     LDA SYSTEM_VIA_ORB
     AND #$F0
     ORA #(1 << _LCD_CONTROL_PINS::EN)
-    ORA DECODER_SR0
+    ORA DECODER_SR4
     STA SYSTEM_VIA_ORB
     AND #<~(1 << _LCD_CONTROL_PINS::EN)
     STA SYSTEM_VIA_ORB
@@ -248,7 +248,7 @@
 .EXPORT GPIO_LCD_WAIT
 
 ; GPIO_LCD_GETC procedure
-; Modifies: A, X, flags
+; Modifies: A, X, SR4, flags
 ;
 ; Reads a byte from the LCD panel and places it into the A register.
 .PROC GPIO_LCD_GETC
@@ -260,18 +260,18 @@
         ASL
         ASL
         ASL
-        STA DECODER_SR0
+        STA DECODER_SR4
 
         ; Read the low nibble.
         JSR _LCD_READ_NIBBLE
-        ORA DECODER_SR0
+        ORA DECODER_SR4
     SYSCTX_ALTFN_END
     RTS
 .ENDPROC
 .EXPORT GPIO_LCD_GETC
 
 ; GPIO_LCD_PUTC procedure
-; Modifies: A, X, flags
+; Modifies: A, X, SR4, flags
 ;
 ; Writes the byte passed in the A register to the LCD panel.
 .PROC GPIO_LCD_PUTC
@@ -289,14 +289,14 @@
         ROR
         ROR
         AND #$0F
-        STA DECODER_SR0
+        STA DECODER_SR4
         JSR _LCD_TOGGLE_ENABLE
 
         ; Present the low nibble.
         PLA
       WRITE_NIBBLE:
         AND #$0F
-        STA DECODER_SR0
+        STA DECODER_SR4
         JSR _LCD_TOGGLE_ENABLE
     SYSCTX_ALTFN_END
     RTS
@@ -410,29 +410,29 @@
 ; TODO: Convert the procedures below into generalized stream procedures
 
 ; GPIO_LCD_PUTSTR_IMM procedure
-; Modifies: A, X, flags
+; Modifies: A, X, SRA, flags
 ;
 ; Writes a string to the LCD panel. The string data should be inlined immediately
 ; after the call to this procedure and null-terminated.
 .PROC GPIO_LCD_PUTSTR_IMM
     ; Pull the return address from the stack.
     PLA
-    STA DECODER_SR1L
+    STA DECODER_SRAL
     PLA
-    STA DECODER_SR1H
+    STA DECODER_SRAH
     BRA STRIMM3
   STRIMM2:
     JSR GPIO_LCD_PUTC
   STRIMM3:
-    INC DECODER_SR1L
+    INC DECODER_SRAL
     BNE STRIMM4
-    INC DECODER_SR1H
+    INC DECODER_SRAH
   STRIMM4:
-    LDA (DECODER_SR1)
+    LDA (DECODER_SRA)
     BNE STRIMM2
-    LDA DECODER_SR1H
+    LDA DECODER_SRAH
     PHA
-    LDA DECODER_SR1L
+    LDA DECODER_SRAL
     PHA
     RTS
 .ENDPROC
@@ -484,12 +484,12 @@ HEXCHARS:
 ; GPIO_LCD_PUTHEX16 procedure
 ; Modifies: A, X, flags
 ;
-; Writes a hexadecimal representation of the 16-bit value in Scratch Register 3
-; to the LCD panel.
+; Writes a hexadecimal representation of the 16-bit value in Scratch Register 3 (low)
+; and Scratch Register 4 (high) to the LCD panel.
 .PROC GPIO_LCD_PUTHEX16
-    LDA DECODER_SR3H
+    LDA DECODER_SR4
     JSR GPIO_LCD_PUTHEX
-    LDA DECODER_SR3L
+    LDA DECODER_SR5
     JSR GPIO_LCD_PUTHEX
     RTS
 .ENDPROC

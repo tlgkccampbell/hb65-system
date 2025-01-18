@@ -81,21 +81,30 @@ DECODER_WBR  := DECODER_REGISTERS + $04
   WRBANK0   = 0
 .ENDENUM
 
-DECODER_SR0  := DECODER_REGISTERS + $08
-DECODER_SR0L := DECODER_SR0 + 0
-DECODER_SR0H := DECODER_SR0 + 1
+DECODER_SR0   := DECODER_REGISTERS + $08            ; Scratch Register 0 (8-bit)
+DECODER_SR1   := DECODER_REGISTERS + $09            ; Scratch Register 1 (8-bit)
+DECODER_SR2   := DECODER_REGISTERS + $0A            ; Scratch Register 2 (8-bit)
+DECODER_SR3   := DECODER_REGISTERS + $0B            ; Scratch Register 3 (8-bit)
+DECODER_SR4   := DECODER_REGISTERS + $0C            ; Scratch Register 4 (8-bit)
+DECODER_SR5   := DECODER_REGISTERS + $0D            ; Scratch Register 5 (8-bit)
+DECODER_SR6   := DECODER_REGISTERS + $0E            ; Scratch Register 6 (8-bit)
+DECODER_SR7   := DECODER_REGISTERS + $0F            ; Scratch Register 7 (8-bit)
 
-DECODER_SR1  := DECODER_REGISTERS + $0A
-DECODER_SR1L := DECODER_SR1 + 0
-DECODER_SR1H := DECODER_SR1 + 1
+DECODER_SRA   := DECODER_SR0                        ; Scratch Register A (16-bit)
+DECODER_SRAL  := DECODER_SR0
+DECODER_SRAH  := DECODER_SR1 
 
-DECODER_SR2  := DECODER_REGISTERS + $0C
-DECODER_SR2L := DECODER_SR2 + 0
-DECODER_SR2H := DECODER_SR2 + 1
+DECODER_SRB   := DECODER_SR2                        ; Scratch Register B (16-bit)
+DECODER_SRBL  := DECODER_SR2
+DECODER_SRBH  := DECODER_SR3 
 
-DECODER_SR3  := DECODER_REGISTERS + $0E
-DECODER_SR3L := DECODER_SR3 + 0
-DECODER_SR3H := DECODER_SR3 + 1
+DECODER_SRC   := DECODER_SR4                        ; Scratch Register C (16-bit)
+DECODER_SRCL  := DECODER_SR4
+DECODER_SRCH  := DECODER_SR5 
+
+DECODER_SRD   := DECODER_SR6                        ; Scratch Register D (16-bit)
+DECODER_SRDL  := DECODER_SR6
+DECODER_SRDH  := DECODER_SR7 
 
 ; System, Type A
 .IF CFG_SYS_CARD = SYSTEM_CARDS::TYPE_A
