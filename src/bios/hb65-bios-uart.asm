@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS UART routines"
 
-.INCLUDE    "hb65-system.inc"
+.INCLUDE    "../hb65-system.inc"
 
 ; UART routines
 .SEGMENT "BIOS"

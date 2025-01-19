@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "Basic input/output system for the HB65 Microcomputer System"
 
-.INCLUDE    "hb65-system.inc"
+.INCLUDE    "../hb65-system.inc"
 
 ; BIOS jumptable
 .SEGMENT "BIOSJMPTBL"

@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS GPIO routines"
 
-.INCLUDE    "hb65-system.inc"
+.INCLUDE    "../hb65-system.inc"
 
 .IMPORT     TIME_DELAY_50US, TIME_DELAY_1MS, TIME_DELAY_50MS
 

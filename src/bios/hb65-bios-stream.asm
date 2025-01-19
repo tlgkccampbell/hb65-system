@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS stream routines"
 
-.INCLUDE    "hb65-system.inc"
+.INCLUDE    "../hb65-system.inc"
 
 .IMPORT     JMP_SRA
 

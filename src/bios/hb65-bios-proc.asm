@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "BIOS process management routines"
 
-.INCLUDE    "hb65-system.inc"
+.INCLUDE    "../hb65-system.inc"
 
 ; Process metadata table
 .SEGMENT "SYSZP"
