@@ -8,8 +8,8 @@ MAKEFILE_DIR  := $(notdir $(patsubst %/,%,$(dir $(MAKEFILE_PATH))))
 BINDIR=bin
 OBJDIR=obj
 
-SRCS = $(wildcard *.asm)
-OBJS = $(SRCS:%.asm=$(OBJDIR)/%.o)
+SRCS = $(wildcard src/*.asm) $(wildcard src/**/*.asm)
+OBJS = $(SRCS:src/%.asm=$(OBJDIR)/%.o)
 DEPS = $(OBJS:%.o=%.d)
 BINS = $(BINDIR)/$(MAKEFILE_DIR).bin $(BINDIR)/$(MAKEFILE_DIR).lbl $(BINDIR)/$(MAKEFILE_DIR).map
 CFGS = hb65.cfg
@@ -37,7 +37,12 @@ else
 endif
 
 $(OBJS): $(CFGS) | $(OBJDIR)
-$(OBJDIR)/%.o: %.asm
+$(OBJDIR)/%.o: src/%.asm
+ifeq ($(OS),Windows_NT)
+	@cmd /C "if not exist $(subst /,\,$(@D)) mkdir $(subst /,\,$(@D))"
+else
+	@mkdir -p "$(@D)"
+endif
 	ca65 -D hb65 -g -t none --cpu 65C02 -l $(OBJDIR)/$*.lst -o $(OBJDIR)/$*.o --create-dep $(OBJDIR)/$*.d $(ASSM_SYMS) $<
 
 -include $(DEPS)
