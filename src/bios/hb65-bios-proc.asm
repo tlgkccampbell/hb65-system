@@ -29,7 +29,7 @@ PROC_METADATA_PC:       .RES 32
 ;
 ; Initializes the process metadata table.
 .PROC PROC_INIT
-    SYSCTX_START
+    SFMODE_SYSCTX_ON
         ; Check whether we have 128K or 512K of WRAM, which changes
         ; how many processes we can run simultaneously.
       PROC_INIT_RAM_CHECK:
@@ -51,7 +51,7 @@ PROC_METADATA_PC:       .RES 32
       : DEX
         STZ PROC_METADATA_STATUS, X
         BNE :-
-    SYSCTX_END
+    SFMODE_SYSCTX_OFF
     RTS
 .ENDPROC
 .EXPORT PROC_INIT
@@ -65,7 +65,7 @@ PROC_METADATA_PC:       .RES 32
 ;
 ; The initial program counter for the new process should be stored in SR0.
 .PROC PROC_NEW
-    SYSCTX_START
+    SFMODE_SYSCTX_ON
         ; Find an unused process slot in the metadata table.
       PROC_NEW_FIND_UNUSED:
         LDX #$00
@@ -101,7 +101,7 @@ PROC_METADATA_PC:       .RES 32
         STA PROC_METADATA_PC, X
         PLA
 PROC_NEW_DONE:
-    SYSCTX_END
+    SFMODE_SYSCTX_OFF
     RTS
 .ENDPROC
 .EXPORT PROC_NEW
@@ -117,7 +117,7 @@ PROC_NEW_DONE:
     PLY
 
     ; Switch to the system context.
-    SYSCTX_START
+    SFMODE_SYSCTX_ON
         ; Store the return address in SR0.
         STX DECODER_SRAL
         STY DECODER_SRAH
@@ -196,7 +196,7 @@ PROC_NEW_DONE:
         TYA
         TAX
         TXS
-    SYSCTX_END
+    SFMODE_SYSCTX_OFF
 
     ; Jump to the process' return address.
     JMP (DECODER_SRA)
@@ -208,7 +208,7 @@ PROC_NEW_DONE:
 ;
 ; Terminates the current process and switches to another running process.
 .PROC PROC_TERM
-    SYSCTX_START
+    SFMODE_SYSCTX_ON
         ; Clear the current process' status bits
         LDX PROC_CURRENT_IX
         STZ PROC_METADATA_STATUS, X
@@ -216,6 +216,6 @@ PROC_NEW_DONE:
         ; Switch to the system process.
         LDX #$00
         JMP PROC_YIELD::PROC_SWITCH
-    ; SYSCTX_END in PROC_SWITCH
+    SFMODE_IMPLIED
 .ENDPROC
 .EXPORT PROC_TERM
