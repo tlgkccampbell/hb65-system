@@ -2,7 +2,8 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "System ROM for the HB65 Microcomputer System"
 
-.IMPORT     GPIO_INIT, GPIO_SET_LEDS, GPIO_BUZZER_BEEP, GPIO_LCD_CLR, GPIO_LCD_PUTC
+.IMPORT     GPIO_INIT, GPIO_SET_LEDS, GPIO_BUZZER_BEEP
+.IMPORT     LCD_INIT, LCD_CLEAR, LCD_PUTC
 .IMPORT     UART_INIT
 .IMPORT     PROC_INIT, PROC_NEW, PROC_YIELD
 .IMPORT     EHBASIC_INIT
@@ -64,8 +65,8 @@ BRK_MSG_COUNT = (LUT_BRK_MSG_END - LUT_BRK_MSG) / 2
   : DEC DECODER_SRCL
 
     ; Set up our output stream.
-    JSR GPIO_LCD_CLR
- STADDR GPIO_LCD_PUTC, DECODER_SRA
+    JSR LCD_CLEAR
+ STADDR LCD_PUTC, DECODER_SRA
 
     ; Retrieve the padding byte, set the front panel
     ; LEDs to that value, and output an error message
@@ -215,6 +216,7 @@ IRQ:
     STA DECODER_SFR
     ; Initialize peripherals.
     JSR GPIO_INIT
+    JSR LCD_INIT
     JSR UART_INIT
     ; Initialize process management.
     JSR PROC_INIT
