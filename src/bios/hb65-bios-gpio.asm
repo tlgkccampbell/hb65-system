@@ -10,7 +10,7 @@
 .SEGMENT "BIOS"
 
 ; GPIO_SET_LEDS procedure
-; Modifies: A, flags
+; Modifies: n/a
 ;
 ; Sets the state of the front panel LEDs to match the value passed in the A register.
 .PROC GPIO_SET_LEDS

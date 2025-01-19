@@ -4,48 +4,48 @@ _INCLUDE_SYSTEM_ = 1
 .INCLUDE    "hb65-registers.inc"
 
 ; SFMODE_SYSCTX_ON macro
-; Modifies: A
+; Modifies: Y
 ;
 ; Enters System Context Mode.
 .MACRO SFMODE_SYSCTX_ON
-    LDA #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0) | (1 << DECODER_SFR_BIT::SYSCTX)
-    STA DECODER_SFR
+    LDY #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0) | (1 << DECODER_SFR_BIT::SYSCTX)
+    STY DECODER_SFR
 .ENDMAC
 
 ; SFMODE_SYSCTX_OFF macro
-; Modifies: A
+; Modifies: Y
 ;
 ; Leaves System Context Mode.
 .MACRO SFMODE_SYSCTX_OFF
-    LDA #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0)
-    STA DECODER_SFR
+    LDY #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0)
+    STY DECODER_SFR
 .ENDMAC
 
 ; SFMODE_ALTFN_ON
-; Modifies: A
+; Modifies: Y
 ;
 ; Enters Alternative Function Mode.
 .MACRO SFMODE_ALTFN_ON
-    LDA #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0) | (1 << DECODER_SFR_BIT::ALTFN)
-    STA DECODER_SFR
+    LDY #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0) | (1 << DECODER_SFR_BIT::ALTFN)
+    STY DECODER_SFR
 .ENDMAC
 
 ; SFMODE_ALTFN_OFF macro
-; Modifies: A
+; Modifies: Y
 ;
 ; Leaves Alternative Function Mode.
 .MACRO SFMODE_ALTFN_OFF
-    LDA #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0)
-    STA DECODER_SFR
+    LDY #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0)
+    STY DECODER_SFR
 .ENDMAC
 
 ; SFMODE_SYSCTX_ALTFN_ON macro
-; Modifies: A
+; Modifies: Y
 ;
 ; Enters System Context Mode and Alternative Function Mode.
 .MACRO SFMODE_SYSCTX_ALTFN_ON
-    LDA #(~((1 << DECODER_SFR_BIT::SFWM1) | (1 << DECODER_SFR_BIT::SFWM0)) & $F0) | (1 << DECODER_SFR_BIT::ALTFN) | (1 << DECODER_SFR_BIT::SYSCTX)
-    STA DECODER_SFR
+    LDY #(~((1 << DECODER_SFR_BIT::SFWM1) | (1 << DECODER_SFR_BIT::SFWM0)) & $F0) | (1 << DECODER_SFR_BIT::ALTFN) | (1 << DECODER_SFR_BIT::SYSCTX)
+    STY DECODER_SFR
 .ENDMACRO
 
 ; SFMODE_RESET

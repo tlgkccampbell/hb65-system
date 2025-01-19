@@ -237,7 +237,7 @@ _LCD_DDRAM_OFFSETS:
 ; whether a newline was handled.
 .PROC _LCD_CHECK_NEWLINE
     ; Is A equal to \n ($0A)?
-    TAY
+    PHA
     CMP #$0A
     BNE RET_NO_NEWLINE
 
@@ -256,11 +256,11 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_UPDATE_CURSOR
       ADVANCE_DONE:
     SFMODE_RESET
-    TYA
+    PLA
     SEC
     RTS
 RET_NO_NEWLINE:
-    TYA
+    PLA
     CLC
     RTS
 .ENDPROC
@@ -274,13 +274,15 @@ RET_NO_NEWLINE:
 .PROC _LCD_CHECK_OVERFLOW
     ; Is LCD_CURSOR_X past the edge of the display? If not,
     ; clear the carry flag and return.
-    TAY
+    PHA
+    PHY
     SFMODE_SYSCTX_ALTFN_ON
         LDA _LCD_CURSOR_X
         CMP #_LCD_COLS
         BEQ TRY_ADVANCE
     SFMODE_RESET
-    TYA
+    PLY
+    PLA
     CLC
     RTS
 
@@ -292,7 +294,8 @@ RET_NO_NEWLINE:
         CMP #_LCD_ROWS-1
         BNE ADVANCE
     SFMODE_RESET
-        TYA
+        PLY
+        PLA
         SEC
         RTS
       ADVANCE:
@@ -300,7 +303,8 @@ RET_NO_NEWLINE:
         INC _LCD_CURSOR_Y
         JSR _LCD_UPDATE_CURSOR
     SFMODE_RESET
-    TYA
+    PLY
+    PLA
     CLC
     RTS
 .ENDPROC
