@@ -11,10 +11,8 @@ PROC_CURRENT_IX:        .RES 1
 
 .SEGMENT "SYSWRAM"
 PROC_METADATA_STATUS:   .RES 16
-PROC_METADATA_DCR:      .RES 16
 PROC_METADATA_MLR:      .RES 16
 PROC_METADATA_RLR:      .RES 16
-PROC_METADATA_STK:      .RES 16
 PROC_METADATA_PC:       .RES 32
 
 .ENUM PROC_STATUS_BIT
@@ -31,6 +29,7 @@ PROC_METADATA_PC:       .RES 32
 .PROC PROC_INIT
     PHA
     PHX
+
     SFMODE_SYSCTX_ON
         ; Check whether we have 128K or 512K of WRAM, which changes
         ; how many processes we can run simultaneously.
@@ -54,6 +53,7 @@ PROC_METADATA_PC:       .RES 32
         STZ PROC_METADATA_STATUS, X
         BNE :-
     SFMODE_SYSCTX_OFF
+    
     PLX
     PLA
     RTS
@@ -67,10 +67,11 @@ PROC_METADATA_PC:       .RES 32
 ; process index on return. Otherwise, the accumulator contains FF to indicate
 ; that there is insufficient memory for new processes.
 ;
-; The initial program counter for the new process should be stored in SR0.
+; The initial program counter for the new process should be stored in Scratch Register A.
 .PROC PROC_NEW
     PHA
     PHX
+
     SFMODE_SYSCTX_ON
         ; Find an unused process slot in the metadata table.
       PROC_NEW_FIND_UNUSED:
@@ -91,11 +92,8 @@ PROC_METADATA_PC:       .RES 32
       PROC_NEW_ALLOC:
         LDA #(1 << PROC_STATUS_BIT::VALID)
         STA PROC_METADATA_STATUS, X
-        STZ PROC_METADATA_DCR, X
         STZ PROC_METADATA_MLR, X
         STZ PROC_METADATA_RLR, X
-        LDA #$FF
-        STA PROC_METADATA_STK, X
         TXA
         PHA
         ASL
@@ -108,6 +106,7 @@ PROC_METADATA_PC:       .RES 32
         PLA
 PROC_NEW_DONE:
     SFMODE_SYSCTX_OFF
+
     PLX
     PLA
     RTS
@@ -121,29 +120,21 @@ PROC_NEW_DONE:
 ; to resume execution.
 .PROC PROC_YIELD
     ; Pull the return address off the process stack.
-    PLX
+    PLA
     PLY
 
     ; Switch to the system context.
     SFMODE_SYSCTX_ON
-        ; Store the return address in SR0.
-        STX DECODER_SRAL
+        ; Store the return address in Scratch Register A.
+        STA DECODER_SRAL
         STY DECODER_SRAH
         INC DECODER_SRAL
         BNE :+
         INC DECODER_SRAH
       :
 
-        ; Update the process' stack pointer in the metadata table.
-        TSX
-        TXA
-        LDX PROC_CURRENT_IX
-        STA PROC_METADATA_STK, X
-
         ; Save the Address Decoder registers.
-        LDA DECODER_DCR
-        AND #(1 << DECODER_DCR_BIT::NMIEN) | (1 << DECODER_DCR_BIT::IRQEN)
-        STA PROC_METADATA_DCR, X
+        LDX PROC_CURRENT_IX
         LDA DECODER_MLR
         STA PROC_METADATA_MLR, X
         LDA DECODER_RLR
@@ -171,22 +162,13 @@ PROC_NEW_DONE:
 
         ; Restore the Address Decoder registers.
       PROC_SWITCH:
-        LDA DECODER_DCR
-        AND #<~((1 << DECODER_DCR_BIT::NMIEN) | (1 << DECODER_DCR_BIT::IRQEN))
-        ORA PROC_METADATA_DCR, X
-        STA DECODER_DCR
         LDA PROC_METADATA_MLR, X
         STA DECODER_MLR
         LDA PROC_METADATA_RLR, X
         STA DECODER_RLR
 
-        ; Get the process' stack pointer from the metadata table and
-        ; store it in the Y register.
-        LDA PROC_METADATA_STK, X
-        TAY
-
         ; Get the process' program counter from the metadata table and
-        ; store it in SR0.
+        ; store it in Scratch Register A.
         PHX
         TXA
         ASL
@@ -197,16 +179,10 @@ PROC_NEW_DONE:
         LDA PROC_METADATA_PC, X
         STA DECODER_SRAH
 
-        ; Update the current process index
+        ; Switch to the process' memory space and exit the system context.
         PLX
         STX PROC_CURRENT_IX
-
-        ; Switch to the process' memory space, set its stack pointer,
-        ; and exit the system context.
         STX DECODER_WBR
-        TYA
-        TAX
-        TXS
     SFMODE_SYSCTX_OFF
 
     ; Jump to the process' return address.

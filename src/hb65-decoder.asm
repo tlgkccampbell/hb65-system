@@ -12,11 +12,32 @@
 ;
 ; Enters System Context Mode.
 .PROC SYSCTX_START
+    ; Disable interrupts.
+    DEC DECODER_ICR
+
+    ; Pull the return address from the stack and store it in Scratch Register B.
+    PLX
+    STX DECODER_SRBL
+    PLX
+    STX DECODER_SRBH
+
+    ; Switch to the system context.
     TSX
     STX DECODER_SPR
-    INC DECODER_DCR
+    LDA DECODER_DCR
+    ORA #(1 << DECODER_DCR_BIT::SYSCTX)
+    STA DECODER_DCR
     LDX DECODER_SPR
     TXS
+
+    ; Push the return address onto the new stack.
+    LDX DECODER_SRBH
+    PHX
+    LDX DECODER_SRBL
+    PHX
+
+    ; Enable interrupts and return.
+    INC DECODER_ICR
     RTS
 .ENDPROC
 .EXPORT SYSCTX_START
@@ -26,11 +47,32 @@
 ;
 ; Leaves System Context Mode.
 .PROC SYSCTX_END
+    ; Disable interrupts.
+    DEC DECODER_ICR
+
+    ; Pull the return address from the stack and store it in Scratch Register B.
+    PLX
+    STX DECODER_SRBL
+    PLX
+    STX DECODER_SRBH
+
+    ; Switch out of the system context.
     TSX
     STX DECODER_SPR
-    DEC DECODER_DCR
+    LDA DECODER_DCR
+    AND #<~(1 << DECODER_DCR_BIT::SYSCTX)
+    STA DECODER_DCR
     LDX DECODER_SPR
     TXS
+
+    ; Push the return address onto the new stack.
+    LDX DECODER_SRBH
+    PHX
+    LDX DECODER_SRBL
+    PHX 
+
+    ; Enable interrupts and return.
+    INC DECODER_ICR
     RTS
 .ENDPROC
 .EXPORT SYSCTX_END
