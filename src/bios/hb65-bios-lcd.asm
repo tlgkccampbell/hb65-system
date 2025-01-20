@@ -35,17 +35,29 @@ _LCD_DDRAM_OFFSETS:
 .ENDENUM
 
 ; _LCD_TOGGLE_ENABLE
-; Modifies: A, SR7, flags
+; Modifies: n/a
 ;
 ; Toggles the LCD's enable line by pulling it high, then low.
 .PROC _LCD_TOGGLE_ENABLE
+    PHA
+
+    ; Store the bottom nibble of A in Scratch Register 7.
+    AND #$0F
+    STA DECODER_SR7
+
+    ; Load the top nibble of VIA1 ORB into A, then OR it
+    ; with the bottom nibble we stored in Scratch Register 7.
     LDA SYSTEM_VIA_ORB
     AND #$F0
-    ORA #(1 << _LCD_CONTROL_PINS::EN)
     ORA DECODER_SR7
+
+    ; Pull the enable pin high, then low.
+    ORA #(1 << _LCD_CONTROL_PINS::EN)
     STA SYSTEM_VIA_ORB
     AND #<~(1 << _LCD_CONTROL_PINS::EN)
     STA SYSTEM_VIA_ORB
+
+    PLA
     RTS
 .ENDPROC
 
@@ -58,160 +70,27 @@ _LCD_DDRAM_OFFSETS:
     LDA SYSTEM_VIA_ORB
     ORA #(1 << _LCD_CONTROL_PINS::EN)
     STA SYSTEM_VIA_ORB
-    PHA
 
     ; Read nibble
     LDA SYSTEM_VIA_IRB
     AND #$0F
-    TAX
+    PHA
 
     ; Pull enable line low
-    PLA
+    LDA SYSTEM_VIA_ORB
     AND #<~(1 << _LCD_CONTROL_PINS::EN)
     STA SYSTEM_VIA_ORB
 
-    TXA
+    PLA
     RTS
 .ENDPROC
 
-; _LCD_START_DATA_RD
-; Modifies: A, flags
-;
-; Prepares VIA1 to read data from the LCD panel.
-.PROC _LCD_START_DATA_RD
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Set lower nibble of VIA1 PORTB to inputs.
-        LDA #$F0
-        STA SYSTEM_VIA_DDRB
-
-        ; Pull RW high, RS high.
-        LDA SYSTEM_VIA_ORB
-        ORA #(1 << _LCD_CONTROL_PINS::RW)
-        ORA #(1 << _LCD_CONTROL_PINS::RS)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-
-; _LCD_START_DATA_WR
-; Modifies: A, flags
-;
-; Prepares VIA1 to write data to the LCD panel.
-.PROC _LCD_START_DATA_WR
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Set lower nibble of VIA1 PORTB to outputs.
-        LDA #$FF
-        STA SYSTEM_VIA_DDRB
-
-        ; Pull RW low, RS high.
-        LDA SYSTEM_VIA_ORB
-        AND #<~(1 << _LCD_CONTROL_PINS::RW)
-        ORA #(1 << _LCD_CONTROL_PINS::RS)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-
-; _LCD_START_INSTR_RD
-; Modifies: A, flags
-;
-; Prepares VIA1 to read instructions from the LCD panel.
-.PROC _LCD_START_INSTR_RD
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Set lower nibble of VIA1 PORTB to inputs.
-        LDA #$F0
-        STA SYSTEM_VIA_DDRB
-
-        ; Pull RW high, RS low.
-        LDA SYSTEM_VIA_ORB
-        ORA #(1 << _LCD_CONTROL_PINS::RW)
-        AND #<~(1 << _LCD_CONTROL_PINS::RS)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-
-; _LCD_START_INSTR_WR
-; Modifies: A, flags
-;
-; Prepares VIA1 to write instructions to the LCD panel.
-.PROC _LCD_START_INSTR_WR
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Set lower nibble of VIA1 PORTB to outputs.
-        LDA #$FF
-        STA SYSTEM_VIA_DDRB
-
-        ; Pull RW low, RS low.
-        LDA SYSTEM_VIA_ORB
-        AND #<~(1 << _LCD_CONTROL_PINS::RW)
-        AND #<~(1 << _LCD_CONTROL_PINS::RS)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-
-; LCD_ENABLE_LIGHT
-; Modifies: A, flags
-;
-; Turns on the LCD's white backlight.
-.PROC LCD_ENABLE_LIGHT
-    SFMODE_SYSCTX_ALTFN_ON
-        LDA SYSTEM_VIA_ORB
-        AND #<~(1 << _LCD_CONTROL_PINS::BL)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-.EXPORT LCD_ENABLE_LIGHT
-
-; LCD_DISABLE_LIGHT
-; Modifies: A, flags
-;
-; Turns off the LCD's white backlight.
-.PROC LCD_DISABLE_LIGHT
-    SFMODE_SYSCTX_ALTFN_ON
-        LDA SYSTEM_VIA_ORB
-        ORA #(1 << _LCD_CONTROL_PINS::BL)
-        STA SYSTEM_VIA_ORB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-.EXPORT LCD_DISABLE_LIGHT
-
-; _LCD_WAIT procedure
-; Modifies: A, flags
-;
-; Waits for the LCD panel to become ready.
-.PROC _LCD_WAIT
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Preserve the current state of the LCD port.
-        LDA SYSTEM_VIA_DDRB
-        PHA
-        LDA SYSTEM_VIA_ORB
-        PHA
-    SFMODE_RESET
-
-    ; Read until bit 7 is clear.
-  : JSR LCD_GETC
-    BIT #%10000000
-    BMI :-
-
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Restore the LCD port's state.
-        PLA
-        STA SYSTEM_VIA_ORB
-        PLA
-        STA SYSTEM_VIA_DDRB
-    SFMODE_RESET
-    RTS
-.ENDPROC
-
-; LCD_GETC procedure
-; Modifies: A, X, SR7, flags
+; _LCD_READ_BYTE procedure
+; Modifies: A
 ;
 ; Reads a byte from the LCD panel and places it into the A register.
-.PROC LCD_GETC
-    JSR _LCD_START_INSTR_RD
+.PROC _LCD_READ_BYTE
+    PHY
     SFMODE_SYSCTX_ALTFN_ON
         ; Read the high nibble.
         JSR _LCD_READ_NIBBLE
@@ -225,23 +104,209 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_READ_NIBBLE
         ORA DECODER_SR7
     SFMODE_RESET
+    PLY
     RTS
 .ENDPROC
-.EXPORT LCD_GETC
+
+; _LCD_WRITE_BYTE procedure
+; Modifies: A
+;
+; Writes a byte from the A register to the LCD panel.
+.PROC _LCD_WRITE_BYTE
+    ; Present the high nibble.
+    PHA
+    ROR
+    ROR
+    ROR
+    ROR
+    AND #$0F
+    JSR _LCD_TOGGLE_ENABLE
+
+    ; Present the low nibble.
+    PLA
+    AND #$0F
+    JSR _LCD_TOGGLE_ENABLE
+    RTS
+.ENDPROC
+
+; _LCD_START_DATA_RD
+; Modifies: n/a
+;
+; Prepares VIA1 to read data from the LCD panel.
+.PROC _LCD_START_DATA_RD
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Set lower nibble of VIA1 PORTB to inputs.
+        LDA #$F0
+        STA SYSTEM_VIA_DDRB
+
+        ; Pull RW high, RS high.
+        LDA SYSTEM_VIA_ORB
+        ORA #(1 << _LCD_CONTROL_PINS::RW)
+        ORA #(1 << _LCD_CONTROL_PINS::RS)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+
+; _LCD_START_DATA_WR
+; Modifies: n/a
+;
+; Prepares VIA1 to write data to the LCD panel.
+.PROC _LCD_START_DATA_WR
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Set lower nibble of VIA1 PORTB to outputs.
+        LDA #$FF
+        STA SYSTEM_VIA_DDRB
+
+        ; Pull RW low, RS high.
+        LDA SYSTEM_VIA_ORB
+        AND #<~(1 << _LCD_CONTROL_PINS::RW)
+        ORA #(1 << _LCD_CONTROL_PINS::RS)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+
+; _LCD_START_INSTR_RD
+; Modifies: n/a
+;
+; Prepares VIA1 to read instruction data from the LCD panel.
+.PROC _LCD_START_INSTR_RD
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Set lower nibble of VIA1 PORTB to inputs.
+        LDA #$F0
+        STA SYSTEM_VIA_DDRB
+
+        ; Pull RW high, RS low.
+        LDA SYSTEM_VIA_ORB
+        ORA #(1 << _LCD_CONTROL_PINS::RW)
+        AND #<~(1 << _LCD_CONTROL_PINS::RS)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+
+; _LCD_START_INSTR_WR
+; Modifies: n/a
+;
+; Prepares VIA1 to write instructions to the LCD panel.
+.PROC _LCD_START_INSTR_WR
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Set lower nibble of VIA1 PORTB to outputs.
+        LDA #$FF
+        STA SYSTEM_VIA_DDRB
+
+        ; Pull RW low, RS low.
+        LDA SYSTEM_VIA_ORB
+        AND #<~(1 << _LCD_CONTROL_PINS::RW)
+        AND #<~(1 << _LCD_CONTROL_PINS::RS)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+
+; LCD_ENABLE_LIGHT
+; Modifies: A, flags
+;
+; Turns on the LCD's white backlight.
+.PROC LCD_ENABLE_LIGHT
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        LDA SYSTEM_VIA_ORB
+        AND #<~(1 << _LCD_CONTROL_PINS::BL)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+.EXPORT LCD_ENABLE_LIGHT
+
+; LCD_DISABLE_LIGHT
+; Modifies: A, flags
+;
+; Turns off the LCD's white backlight.
+.PROC LCD_DISABLE_LIGHT
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        LDA SYSTEM_VIA_ORB
+        ORA #(1 << _LCD_CONTROL_PINS::BL)
+        STA SYSTEM_VIA_ORB
+    SFMODE_RESET
+    PLA
+    PLY
+    RTS
+.ENDPROC
+.EXPORT LCD_DISABLE_LIGHT
+
+; _LCD_WAIT procedure
+; Modifies: n/a
+;
+; Waits for the LCD panel to become ready.
+.PROC _LCD_WAIT
+    PHY
+    PHA
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Preserve the current state of the LCD port.
+        LDA SYSTEM_VIA_DDRB
+        PHA
+        LDA SYSTEM_VIA_ORB
+        PHA
+    SFMODE_RESET
+
+    ; Read until bit 7 is clear.
+    JSR _LCD_START_INSTR_RD
+  : JSR _LCD_READ_BYTE
+    AND #%10000000
+    BMI :-
+
+    SFMODE_SYSCTX_ALTFN_ON
+        ; Restore the LCD port's state.
+        PLA
+        STA SYSTEM_VIA_ORB
+        PLA
+        STA SYSTEM_VIA_DDRB
+    SFMODE_RESET
+    PLA
+    PLY    
+    RTS
+.ENDPROC
 
 ; _LCD_CHECK_NEWLINE procedure
-; Modifies: X, Y, flags
+; Modifies: n/a
 ; 
 ; Checks the contents of A to determine whether it represents a newline character.
 ; If so, advances the LCD cursor to the next line. On return, the carry flag indicates
 ; whether a newline was handled.
 .PROC _LCD_CHECK_NEWLINE
-    ; Is A equal to \n ($0A)?
-    PHA
+    ; Is A equal to \n ($0A)? If not, clear carry and immediately return.
     CMP #$0A
-    BNE RET_NO_NEWLINE
+    BEQ TRY_ADVANCE_LINE
+    CLC
+    RTS
 
     ; Advance to the next line.
+  TRY_ADVANCE_LINE:
+    PHA
+    PHY
     SFMODE_SYSCTX_ALTFN_ON
       ADVANCE:
         ; Make sure we haven't reached the last line of the display.
@@ -256,61 +321,54 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_UPDATE_CURSOR
       ADVANCE_DONE:
     SFMODE_RESET
+    PLY
     PLA
     SEC
-    RTS
-RET_NO_NEWLINE:
-    PLA
-    CLC
     RTS
 .ENDPROC
 
 ; _LCD_CHECK_OVERFLOW procedure
-; Modifies: X, Y, flags
+; Modifies: n/a
 ;
 ; Check the LCD cursor position to determine if printing a character will
 ; overflow the current line. If so, advances the LCD cursor to the next line.
 ; On return, the carry flag is set if the display is full.
 .PROC _LCD_CHECK_OVERFLOW
-    ; Is LCD_CURSOR_X past the edge of the display? If not,
-    ; clear the carry flag and return.
     PHA
     PHY
     SFMODE_SYSCTX_ALTFN_ON
+        ; Make sure we're at the last column of the display.
+        ; If not, immediately return.
         LDA _LCD_CURSOR_X
         CMP #_LCD_COLS
-        BEQ TRY_ADVANCE
-    SFMODE_RESET
-    PLY
-    PLA
-    CLC
-    RTS
+        BNE ADVANCE_DONE
 
-    ; Attempt to advance to the next line, if there's enough room.
-  TRY_ADVANCE:
         ; Make sure we haven't reached the last line of the display.
         ; If we have, set the carry flag and return.
         LDA _LCD_CURSOR_Y
         CMP #_LCD_ROWS-1
-        BNE ADVANCE
-    SFMODE_RESET
-        PLY
-        PLA
-        SEC
-        RTS
-      ADVANCE:
+        BNE ADVANCE_FAIL
+
+        ; Move the cursor to the next line.
         STZ _LCD_CURSOR_X
         INC _LCD_CURSOR_Y
         JSR _LCD_UPDATE_CURSOR
+  ADVANCE_DONE:
     SFMODE_RESET
     PLY
     PLA
     CLC
     RTS
+  ADVANCE_FAIL:
+    SFMODE_RESET
+    PLY
+    PLA
+    SEC
+    RTS
 .ENDPROC
 
 ; LCD_PUTC procedure
-; Modifies: A, X, Y, SR7, flags
+; Modifies: n/a
 ;
 ; Writes the byte passed in the A register to the LCD panel.
 .PROC LCD_PUTC
@@ -320,16 +378,13 @@ RET_NO_NEWLINE:
     JSR _LCD_CHECK_OVERFLOW
     BCS DONE
 
-    ; Output the character in A.
-OUTPUT:
-    PHA
     ; Wait for the LCD to become ready.
+    PHA
     JSR _LCD_WAIT
     JSR _LCD_START_DATA_WR
     SFMODE_SYSCTX_ALTFN_ON
-        PLA
         INC _LCD_CURSOR_X
-      NO_WAIT:
+
         ; Present the high nibble.
         PHA
         ROR
@@ -337,16 +392,15 @@ OUTPUT:
         ROR
         ROR
         AND #$0F
-        STA DECODER_SR7
         JSR _LCD_TOGGLE_ENABLE
 
         ; Present the low nibble.
         PLA
-      WRITE_NIBBLE:
         AND #$0F
-        STA DECODER_SR7
         JSR _LCD_TOGGLE_ENABLE
     SFMODE_RESET
+    PLA
+
   DONE:
     RTS
 .ENDPROC
@@ -361,11 +415,11 @@ OUTPUT:
     JSR _LCD_START_INSTR_WR
 
     SFMODE_SYSCTX_ALTFN_ON
-    LDA #%00000001
-    JSR LCD_PUTC::NO_WAIT
-
-    STZ _LCD_CURSOR_X
-    STZ _LCD_CURSOR_Y
+        LDA #%00000001
+        JSR _LCD_WRITE_BYTE
+        STZ _LCD_CURSOR_X
+        STZ _LCD_CURSOR_Y
+    SFMODE_RESET
     JSR _LCD_UPDATE_CURSOR
 
     RTS
@@ -373,10 +427,13 @@ OUTPUT:
 .EXPORT LCD_CLEAR
 
 ; LCD_INIT procedure
-; Modifies:
+; Modifies: n/a
 ;
 ; Initializes the front panel LCD.
 .PROC LCD_INIT
+    PHA
+    PHY
+
     ; Initialize the character LCD.
     JSR LCD_DISABLE_LIGHT
     STZ _LCD_CURSOR_X
@@ -385,8 +442,9 @@ OUTPUT:
 
     ; Function set (8-bit mode, 1st try)
     SFMODE_SYSCTX_ALTFN_ON
-    LDA #%0011
-    JSR LCD_PUTC::WRITE_NIBBLE
+        LDA #%0011
+        JSR _LCD_TOGGLE_ENABLE
+    SFMODE_RESET
     JSR TIME_DELAY_1MS
     JSR TIME_DELAY_1MS
     JSR TIME_DELAY_1MS
@@ -396,60 +454,68 @@ OUTPUT:
     ; Function set (8-bit mode, 2nd try)
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%0011
-        JSR LCD_PUTC::WRITE_NIBBLE
-    SFMODE_IMPLIED
+        JSR _LCD_TOGGLE_ENABLE
+    SFMODE_RESET
     JSR TIME_DELAY_50US
 
     ; Function set (8-bit mode, 3rd try)
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%0011
-        JSR LCD_PUTC::WRITE_NIBBLE
-    SFMODE_IMPLIED
+        JSR _LCD_TOGGLE_ENABLE
+    SFMODE_RESET
     JSR TIME_DELAY_50US
 
     ; Function set (4-bit mode)
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%0010
-        JSR LCD_PUTC::WRITE_NIBBLE
-    SFMODE_IMPLIED
+        JSR _LCD_TOGGLE_ENABLE
+    SFMODE_RESET
     JSR TIME_DELAY_50US
 
     ; Function set (4 lines, 5x8 font)
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%00101000
-        JSR LCD_PUTC::NO_WAIT
-    SFMODE_IMPLIED
+        JSR _LCD_WRITE_BYTE
+    SFMODE_RESET
     JSR TIME_DELAY_1MS
 
     ; Display on, cursor on, blinking on
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%00001111
-        JSR LCD_PUTC::NO_WAIT
-    SFMODE_IMPLIED
+        JSR _LCD_WRITE_BYTE
+    SFMODE_RESET
     JSR TIME_DELAY_1MS
 
     ; Clear display
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%00000001
-        JSR LCD_PUTC::NO_WAIT
-    SFMODE_IMPLIED
+        JSR _LCD_WRITE_BYTE
+    SFMODE_RESET
     JSR TIME_DELAY_1MS
 
     ; Entry mode set
     SFMODE_SYSCTX_ALTFN_ON
         LDA #%00000110
-        JSR LCD_PUTC::NO_WAIT
-    SFMODE_IMPLIED
+        JSR _LCD_WRITE_BYTE
+    SFMODE_RESET
     JSR TIME_DELAY_1MS
+
+    PLY
+    PLA
+    RTS    
 .ENDPROC
 .EXPORT LCD_INIT
 
 ; _LCD_UPDATE_CURSOR
-; Modifies: A, X, flags
+; Modifies: n/a
 ; 
 ; Sets the LCD panel's current DDRAM address to match the values stored
 ; for the cursor in LCD_CURSOR_X and LCD_CURSOR_Y.
 .PROC _LCD_UPDATE_CURSOR
+    PHA
+    PHX
+    PHY
+
     JSR _LCD_WAIT
     JSR _LCD_START_INSTR_WR
 
@@ -459,8 +525,11 @@ OUTPUT:
         ADC _LCD_CURSOR_X
 
         ORA #%10000000
-        JSR LCD_PUTC::NO_WAIT
-    SFMODE_IMPLIED
+        JSR _LCD_WRITE_BYTE
+    SFMODE_RESET
 
+    PLY
+    PLX
+    PLA
     RTS
 .ENDPROC
