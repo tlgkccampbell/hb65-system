@@ -24,9 +24,11 @@
     ; Switch to the system context.
     TSX
     STX DECODER_SPR
+    TAX
     LDA DECODER_DCR
     ORA #(1 << DECODER_DCR_BIT::SYSCTX)
     STA DECODER_DCR
+    TXA
     LDX DECODER_SPR
     TXS
 
@@ -59,9 +61,11 @@
     ; Switch out of the system context.
     TSX
     STX DECODER_SPR
+    TAX
     LDA DECODER_DCR
     AND #<~(1 << DECODER_DCR_BIT::SYSCTX)
     STA DECODER_DCR
+    TXA
     LDX DECODER_SPR
     TXS
 
