@@ -3,57 +3,56 @@ _INCLUDE_SYSTEM_ = 1
 
 .INCLUDE    "hb65-registers.inc"
 
+.GLOBAL     SYSCTX_START, SYSCTX_END, ALTFN_START, ALTFN_END
+
 ; SFMODE_SYSCTX_ON macro
-; Modifies: Y
+; Modifies: X
 ;
 ; Enters System Context Mode.
 .MACRO SFMODE_SYSCTX_ON
-    LDY #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0) | (1 << DECODER_SFR_BIT::SYSCTX)
-    STY DECODER_SFR
+    JSR SYSCTX_START
 .ENDMAC
 
 ; SFMODE_SYSCTX_OFF macro
-; Modifies: Y
+; Modifies: X
 ;
 ; Leaves System Context Mode.
 .MACRO SFMODE_SYSCTX_OFF
-    LDY #(~(1 << DECODER_SFR_BIT::SFWM0) & $F0)
-    STY DECODER_SFR
+    JSR SYSCTX_END
 .ENDMAC
 
 ; SFMODE_ALTFN_ON
-; Modifies: Y
+; Modifies: n/a
 ;
 ; Enters Alternative Function Mode.
 .MACRO SFMODE_ALTFN_ON
-    LDY #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0) | (1 << DECODER_SFR_BIT::ALTFN)
-    STY DECODER_SFR
+    JSR ALTFN_START
 .ENDMAC
 
 ; SFMODE_ALTFN_OFF macro
-; Modifies: Y
+; Modifies: n/a
 ;
 ; Leaves Alternative Function Mode.
 .MACRO SFMODE_ALTFN_OFF
-    LDY #(~(1 << DECODER_SFR_BIT::SFWM1) & $F0)
-    STY DECODER_SFR
+    JSR ALTFN_END
 .ENDMAC
 
 ; SFMODE_SYSCTX_ALTFN_ON macro
-; Modifies: Y
+; Modifies: X
 ;
 ; Enters System Context Mode and Alternative Function Mode.
 .MACRO SFMODE_SYSCTX_ALTFN_ON
-    LDY #(~((1 << DECODER_SFR_BIT::SFWM1) | (1 << DECODER_SFR_BIT::SFWM0)) & $F0) | (1 << DECODER_SFR_BIT::ALTFN) | (1 << DECODER_SFR_BIT::SYSCTX)
-    STY DECODER_SFR
+    JSR SYSCTX_START
+    JSR ALTFN_START
 .ENDMACRO
 
 ; SFMODE_RESET
-; Modifies: n/a
+; Modifies: X
 ;
 ; Returns the Address Decoder to its standard operating mode.
 .MACRO SFMODE_RESET
-    STZ DECODER_SFR
+    JSR ALTFN_END
+    JSR SYSCTX_END
 .ENDMACRO
 
 ; SFMODE_IMPLIED

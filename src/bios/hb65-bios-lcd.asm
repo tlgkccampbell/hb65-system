@@ -90,7 +90,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Reads a byte from the LCD panel and places it into the A register.
 .PROC _LCD_READ_BYTE
-    PHY
+    PHX
     SFMODE_SYSCTX_ALTFN_ON
         ; Read the high nibble.
         JSR _LCD_READ_NIBBLE
@@ -104,7 +104,7 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_READ_NIBBLE
         ORA DECODER_SR7
     SFMODE_RESET
-    PLY
+    PLX
     RTS
 .ENDPROC
 
@@ -134,7 +134,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Prepares VIA1 to read data from the LCD panel.
 .PROC _LCD_START_DATA_RD
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         ; Set lower nibble of VIA1 PORTB to inputs.
@@ -148,7 +148,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 
@@ -157,7 +157,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Prepares VIA1 to write data to the LCD panel.
 .PROC _LCD_START_DATA_WR
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         ; Set lower nibble of VIA1 PORTB to outputs.
@@ -171,7 +171,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 
@@ -180,7 +180,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Prepares VIA1 to read instruction data from the LCD panel.
 .PROC _LCD_START_INSTR_RD
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         ; Set lower nibble of VIA1 PORTB to inputs.
@@ -194,7 +194,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 
@@ -203,7 +203,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Prepares VIA1 to write instructions to the LCD panel.
 .PROC _LCD_START_INSTR_WR
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         ; Set lower nibble of VIA1 PORTB to outputs.
@@ -217,7 +217,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 
@@ -226,7 +226,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Turns on the LCD's white backlight.
 .PROC LCD_ENABLE_LIGHT
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         LDA SYSTEM_VIA_ORB
@@ -234,7 +234,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 .EXPORT LCD_ENABLE_LIGHT
@@ -244,7 +244,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Turns off the LCD's white backlight.
 .PROC LCD_DISABLE_LIGHT
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         LDA SYSTEM_VIA_ORB
@@ -252,7 +252,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_ORB
     SFMODE_RESET
     PLA
-    PLY
+    PLX
     RTS
 .ENDPROC
 .EXPORT LCD_DISABLE_LIGHT
@@ -262,7 +262,7 @@ _LCD_DDRAM_OFFSETS:
 ;
 ; Waits for the LCD panel to become ready.
 .PROC _LCD_WAIT
-    PHY
+    PHX
     PHA
     SFMODE_SYSCTX_ALTFN_ON
         ; Preserve the current state of the LCD port.
@@ -286,7 +286,7 @@ _LCD_DDRAM_OFFSETS:
         STA SYSTEM_VIA_DDRB
     SFMODE_RESET
     PLA
-    PLY    
+    PLX    
     RTS
 .ENDPROC
 
@@ -306,7 +306,7 @@ _LCD_DDRAM_OFFSETS:
     ; Advance to the next line.
   TRY_ADVANCE_LINE:
     PHA
-    PHY
+    PHX
     SFMODE_SYSCTX_ALTFN_ON
       ADVANCE:
         ; Make sure we haven't reached the last line of the display.
@@ -321,7 +321,7 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_UPDATE_CURSOR
       ADVANCE_DONE:
     SFMODE_RESET
-    PLY
+    PLX
     PLA
     SEC
     RTS
@@ -335,7 +335,7 @@ _LCD_DDRAM_OFFSETS:
 ; On return, the carry flag is set if the display is full.
 .PROC _LCD_CHECK_OVERFLOW
     PHA
-    PHY
+    PHX
     SFMODE_SYSCTX_ALTFN_ON
         ; Make sure we're at the last column of the display.
         ; If not, immediately return.
@@ -355,13 +355,13 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_UPDATE_CURSOR
   ADVANCE_DONE:
     SFMODE_RESET
-    PLY
+    PLX
     PLA
     CLC
     RTS
   ADVANCE_FAIL:
     SFMODE_RESET
-    PLY
+    PLX
     PLA
     SEC
     RTS
@@ -432,7 +432,7 @@ _LCD_DDRAM_OFFSETS:
 ; Initializes the front panel LCD.
 .PROC LCD_INIT
     PHA
-    PHY
+    PHX
 
     ; Initialize the character LCD.
     JSR LCD_DISABLE_LIGHT
@@ -500,7 +500,7 @@ _LCD_DDRAM_OFFSETS:
     SFMODE_RESET
     JSR TIME_DELAY_1MS
 
-    PLY
+    PLX
     PLA
     RTS    
 .ENDPROC
@@ -514,7 +514,6 @@ _LCD_DDRAM_OFFSETS:
 .PROC _LCD_UPDATE_CURSOR
     PHA
     PHX
-    PHY
 
     JSR _LCD_WAIT
     JSR _LCD_START_INSTR_WR
@@ -528,7 +527,6 @@ _LCD_DDRAM_OFFSETS:
         JSR _LCD_WRITE_BYTE
     SFMODE_RESET
 
-    PLY
     PLX
     PLA
     RTS
