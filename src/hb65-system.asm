@@ -224,11 +224,6 @@ IRQ:
  STADDR :+, DECODER_SR0
     JSR PROC_NEW
     JSR GPIO_BUZZER_BEEP
-    LDA #$AA
-    LDX #$BB
-    LDY #$CC
-    BRK
-    .BYTE $00
     ; Initialize the EhBASIC process.
  STADDR EHBASIC_INIT, DECODER_SR0
     JSR PROC_NEW

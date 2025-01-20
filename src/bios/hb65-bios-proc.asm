@@ -25,10 +25,12 @@ PROC_METADATA_PC:       .RES 32
 .SEGMENT "BIOS"
 
 ; PROC_INIT procedure
-; Modifies: A, X, flags
+; Modifies: n/a
 ;
 ; Initializes the process metadata table.
 .PROC PROC_INIT
+    PHA
+    PHX
     SFMODE_SYSCTX_ON
         ; Check whether we have 128K or 512K of WRAM, which changes
         ; how many processes we can run simultaneously.
@@ -52,12 +54,14 @@ PROC_METADATA_PC:       .RES 32
         STZ PROC_METADATA_STATUS, X
         BNE :-
     SFMODE_SYSCTX_OFF
+    PLX
+    PLA
     RTS
 .ENDPROC
 .EXPORT PROC_INIT
 
 ; PROC_NEW procedure
-; Modifies: A, X, flags
+; Modifies: n/a
 ;
 ; Attempts to allocate a new process. If successful, the accumulator contains the
 ; process index on return. Otherwise, the accumulator contains FF to indicate
@@ -65,6 +69,8 @@ PROC_METADATA_PC:       .RES 32
 ;
 ; The initial program counter for the new process should be stored in SR0.
 .PROC PROC_NEW
+    PHA
+    PHX
     SFMODE_SYSCTX_ON
         ; Find an unused process slot in the metadata table.
       PROC_NEW_FIND_UNUSED:
@@ -102,12 +108,14 @@ PROC_METADATA_PC:       .RES 32
         PLA
 PROC_NEW_DONE:
     SFMODE_SYSCTX_OFF
+    PLX
+    PLA
     RTS
 .ENDPROC
 .EXPORT PROC_NEW
 
 ; PROC_YIELD procedure
-; Modifies: A, X, Y, SRA, flags
+; Modifies: A, X, Y
 ;
 ; Yields execution to the process scheduler, allowing another idle process
 ; to resume execution.
@@ -134,6 +142,7 @@ PROC_NEW_DONE:
 
         ; Save the Address Decoder registers.
         LDA DECODER_DCR
+        AND #(1 << DECODER_DCR_BIT::NMIEN) | (1 << DECODER_DCR_BIT::IRQEN)
         STA PROC_METADATA_DCR, X
         LDA DECODER_MLR
         STA PROC_METADATA_MLR, X
@@ -162,7 +171,9 @@ PROC_NEW_DONE:
 
         ; Restore the Address Decoder registers.
       PROC_SWITCH:
-        LDA PROC_METADATA_DCR, X
+        LDA DECODER_DCR
+        AND #<~((1 << DECODER_DCR_BIT::NMIEN) | (1 << DECODER_DCR_BIT::IRQEN))
+        ORA PROC_METADATA_DCR, X
         STA DECODER_DCR
         LDA PROC_METADATA_MLR, X
         STA DECODER_MLR
@@ -204,7 +215,7 @@ PROC_NEW_DONE:
 .EXPORT PROC_YIELD
 
 ; PROC_TERM procedure
-; Modifies: A, X, flags
+; Modifies: A, X
 ;
 ; Terminates the current process and switches to another running process.
 .PROC PROC_TERM
