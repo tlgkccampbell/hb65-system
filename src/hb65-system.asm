@@ -43,26 +43,23 @@ BRK_MSG_COUNT = (LUT_BRK_MSG_END - LUT_BRK_MSG) / 2
 .PROC BRK_HANDLER
     ; Move the return address into a scratch register.
     LDA $010A, X
-    STA DECODER_SRCL
+    STA DECODER_SRBL
     LDA $010B, X
-    STA DECODER_SRCH
-
-    ; Decrement the return address.
-    LDA DECODER_SRCL
+    STA DECODER_SRBH
     BNE :+
-    DEC DECODER_SRCH
-  : DEC DECODER_SRCL
+    DEC DECODER_SRBH
+  : DEC DECODER_SRBL
 
-    ; Read the padding byte into Scratch Register 6.
-    LDA (DECODER_SRC)
-    STA DECODER_SR6
+    ; Read the padding byte into Y.
+    LDA (DECODER_SRB)
+    TAY
     JSR GPIO_SET_LEDS
 
     ; Decrement the return address again.
-    LDA DECODER_SRCL
+    LDA DECODER_SRBL
     BNE :+
-    DEC DECODER_SRCH
-  : DEC DECODER_SRCL
+    DEC DECODER_SRBH
+  : DEC DECODER_SRBL
 
     ; Set up our output stream.
     JSR LCD_CLEAR
@@ -72,32 +69,32 @@ BRK_MSG_COUNT = (LUT_BRK_MSG_END - LUT_BRK_MSG) / 2
     ; LEDs to that value, and output an error message
     ; to the LCD panel.
     JSR STRM_PUTSTR_IMM
-    .BYTE "Break $", $00
-    LDA DECODER_SR6
+    .BYTE "BRK $", $00
+    TYA
     JSR STRM_PUTHEX
     JSR STRM_PUTSTR_IMM
     .BYTE " at $", $00
+    LDA DECODER_WBR
+    JSR STRM_PUTHEX    
+    JSR STRM_PUTSTR_IMM    
+    .BYTE "-$", $00
     JSR STRM_PUTHEX16
     JSR STRM_PUTNL
-
+    
     ; Output the error message.
-    LDA DECODER_SR6
+    TYA
     CMP #BRK_MSG_COUNT
-    BCC LOAD_BRK_MESSAGE
-    LDA #<BRK_MSG_UNKNOWN
-    STA DECODER_SRBL
-    LDA #>BRK_MSG_UNKNOWN
-    STA DECODER_SRBH
-    JMP PUTS_BRK_MESSAGE
-LOAD_BRK_MESSAGE:
-    LDX DECODER_SR6
+    BCC BRK_MSG_EXISTS
+ STADDR BRK_MSG_UNKNOWN, DECODER_SRB
+    JMP BRK_MSG_PUTS
+BRK_MSG_EXISTS:
+    TAX
     LDA LUT_BRK_MSG, X
     STA DECODER_SRBL
     INX
     LDA LUT_BRK_MSG, X
     STA DECODER_SRBH
-    JMP PUTS_BRK_MESSAGE
-PUTS_BRK_MESSAGE:
+BRK_MSG_PUTS:
     JSR STRM_PUTSTR
     JSR STRM_PUTNL
 
@@ -160,7 +157,7 @@ PUTS_BRK_MESSAGE:
 ; Modifies: n/a
 ;
 ; Handles interrupt requests.
-.PROC IRQ_HANDLER
+.PROC IRQ_HANDLER    
     ; Preserve registers.
     PHY
     PHX
@@ -221,11 +218,11 @@ IRQ:
     ; Initialize process management.
     JSR PROC_INIT
     ; Initialize the system process.
- STADDR :+, DECODER_SR0
+ STADDR :+, DECODER_SRA
     JSR PROC_NEW
     JSR GPIO_BUZZER_BEEP
     ; Initialize the EhBASIC process.
- STADDR EHBASIC_INIT, DECODER_SR0
+ STADDR EHBASIC_INIT, DECODER_SRA
     JSR PROC_NEW
 :   JSR PROC_YIELD
     JMP :-

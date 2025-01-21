@@ -9,10 +9,11 @@
 ; LCD state
 .SEGMENT "SYSZP"
 
-_LCD_COLS                = 20
-_LCD_ROWS                = 4
-_LCD_CURSOR_X:           .RES 1
-_LCD_CURSOR_Y:           .RES 1 
+_LCD_COLS           = 20
+_LCD_ROWS           = 4
+_LCD_DATA_BUFFER:   .RES 1
+_LCD_CURSOR_X:      .RES 1
+_LCD_CURSOR_Y:      .RES 1 
 
 ; LCD routines
 .SEGMENT "BIOS"
@@ -43,13 +44,13 @@ _LCD_DDRAM_OFFSETS:
 
     ; Store the bottom nibble of A in Scratch Register 7.
     AND #$0F
-    STA DECODER_SR7
+    STA _LCD_DATA_BUFFER
 
     ; Load the top nibble of VIA1 ORB into A, then OR it
     ; with the bottom nibble we stored in Scratch Register 7.
     LDA SYSTEM_VIA_ORB
     AND #$F0
-    ORA DECODER_SR7
+    ORA _LCD_DATA_BUFFER
 
     ; Pull the enable pin high, then low.
     ORA #(1 << _LCD_CONTROL_PINS::EN)
@@ -98,11 +99,11 @@ _LCD_DDRAM_OFFSETS:
         ASL
         ASL
         ASL
-        STA DECODER_SR7
+        STA _LCD_DATA_BUFFER
 
         ; Read the low nibble.
         JSR _LCD_READ_NIBBLE
-        ORA DECODER_SR7
+        ORA _LCD_DATA_BUFFER
     SFMODE_RESET
     PLX
     RTS
@@ -318,9 +319,9 @@ _LCD_DDRAM_OFFSETS:
         ; Advance to the next line and update the cursor position.
         STZ _LCD_CURSOR_X
         INC _LCD_CURSOR_Y
-        JSR _LCD_UPDATE_CURSOR
       ADVANCE_DONE:
     SFMODE_RESET
+    JSR _LCD_UPDATE_CURSOR
     PLX
     PLA
     SEC
@@ -352,9 +353,9 @@ _LCD_DDRAM_OFFSETS:
         ; Move the cursor to the next line.
         STZ _LCD_CURSOR_X
         INC _LCD_CURSOR_Y
-        JSR _LCD_UPDATE_CURSOR
   ADVANCE_DONE:
     SFMODE_RESET
+    JSR _LCD_UPDATE_CURSOR
     PLX
     PLA
     CLC
@@ -436,8 +437,10 @@ _LCD_DDRAM_OFFSETS:
 
     ; Initialize the character LCD.
     JSR LCD_DISABLE_LIGHT
-    STZ _LCD_CURSOR_X
-    STZ _LCD_CURSOR_Y
+    SFMODE_SYSCTX_ALTFN_ON
+        STZ _LCD_CURSOR_X
+        STZ _LCD_CURSOR_Y
+    SFMODE_RESET
     JSR _LCD_START_INSTR_WR
 
     ; Function set (8-bit mode, 1st try)

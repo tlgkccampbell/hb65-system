@@ -100,8 +100,8 @@ PROC_METADATA_PC:       .RES 32
         TAX
         LDA DECODER_SRAL
         STA PROC_METADATA_PC, X
-        LDA DECODER_SRAH
         INX
+        LDA DECODER_SRAH
         STA PROC_METADATA_PC, X
         PLA
 PROC_NEW_DONE:
@@ -168,7 +168,7 @@ PROC_NEW_DONE:
         STA DECODER_RLR
 
         ; Get the process' program counter from the metadata table and
-        ; store it in Scratch Register A.
+        ; store it in Scratch Register D.
         PHX
         TXA
         ASL

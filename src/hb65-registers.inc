@@ -94,20 +94,20 @@ DECODER_SR6     := DECODER_REGISTERS + $0E  ; Scratch Register 6 (8-bit)
 DECODER_SR7     := DECODER_REGISTERS + $0F  ; Scratch Register 7 (8-bit)
 
 DECODER_SRA     := DECODER_SR0              ; Scratch Register A (16-bit)
-DECODER_SRAL    := DECODER_SR0
-DECODER_SRAH    := DECODER_SR1 
+DECODER_SRAL    := DECODER_SRA+0            ; Trashed by yielding.
+DECODER_SRAH    := DECODER_SRA+1 
 
 DECODER_SRB     := DECODER_SR2              ; Scratch Register B (16-bit)
-DECODER_SRBL    := DECODER_SR2
-DECODER_SRBH    := DECODER_SR3 
+DECODER_SRBL    := DECODER_SRB+0            ; Trashed by yielding.
+DECODER_SRBH    := DECODER_SRB+1 
 
 DECODER_SRC     := DECODER_SR4              ; Scratch Register C (16-bit)
-DECODER_SRCL    := DECODER_SR4
-DECODER_SRCH    := DECODER_SR5 
+DECODER_SRCL    := DECODER_SRC+0            ; Trashed by yielding.
+DECODER_SRCH    := DECODER_SRC+1 
 
 DECODER_SRD     := DECODER_SR6              ; Scratch Register D (16-bit)
-DECODER_SRDL    := DECODER_SR6
-DECODER_SRDH    := DECODER_SR7 
+DECODER_SRDL    := DECODER_SRD+0            ; Trashed by yielding & switching to the system context.
+DECODER_SRDH    := DECODER_SRD+1 
 
 ; System, Type A
 .IF CFG_SYS_CARD = SYSTEM_CARDS::TYPE_A

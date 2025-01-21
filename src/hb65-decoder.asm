@@ -17,9 +17,9 @@
 
     ; Pull the return address from the stack and store it in Scratch Register B.
     PLX
-    STX DECODER_SRBL
+    STX DECODER_SRDL
     PLX
-    STX DECODER_SRBH
+    STX DECODER_SRDH
 
     ; Switch to the system context.
     TSX
@@ -33,9 +33,9 @@
     TXS
 
     ; Push the return address onto the new stack.
-    LDX DECODER_SRBH
+    LDX DECODER_SRDH
     PHX
-    LDX DECODER_SRBL
+    LDX DECODER_SRDL
     PHX
 
     ; Enable interrupts and return.
@@ -54,9 +54,9 @@
 
     ; Pull the return address from the stack and store it in Scratch Register B.
     PLX
-    STX DECODER_SRBL
+    STX DECODER_SRDL
     PLX
-    STX DECODER_SRBH
+    STX DECODER_SRDH
 
     ; Switch out of the system context.
     TSX
@@ -70,9 +70,9 @@
     TXS
 
     ; Push the return address onto the new stack.
-    LDX DECODER_SRBH
+    LDX DECODER_SRDH
     PHX
-    LDX DECODER_SRBL
+    LDX DECODER_SRDL
     PHX 
 
     ; Enable interrupts and return.

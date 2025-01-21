@@ -24,7 +24,7 @@ IN      = $0300 ; Input buffer
 .SEGMENT "WOZMON"
 
 WOZ_TERM:       JSR     PROC_TERM
-WOZ_INIT:    STADDR WOZ_ENTER, DECODER_SR0
+WOZ_INIT:    STADDR WOZ_ENTER, DECODER_SRA
                 JSR     PROC_NEW
                 JSR     PROC_YIELD
                 RTS

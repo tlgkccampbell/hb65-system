@@ -15,11 +15,23 @@
 ; Sets the state of the front panel LEDs to match the value passed in the A register.
 .PROC GPIO_SET_LEDS
     PHA
-    SFMODE_SYSCTX_ALTFN_ON
-        ; Set PORTA on VIA1
-        PLA
-        STA SYSTEM_VIA_ORA
-    SFMODE_RESET
+    PHY
+    TAY
+
+    LDA DECODER_RLR
+    PHA
+    ORA #(1 << DECODER_RLR_BIT::SDEFREN)
+    STA DECODER_RLR 
+
+    SFMODE_ALTFN_ON
+        STY SYSTEM_VIA_ORA
+    SFMODE_ALTFN_OFF
+
+    PLA
+    STA DECODER_RLR
+
+    PLY
+    PLA
     RTS
 .ENDPROC
 .EXPORT GPIO_SET_LEDS
