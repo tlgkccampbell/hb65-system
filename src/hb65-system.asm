@@ -209,8 +209,6 @@ IRQ:
     STA DECODER_RLR
     LDA #$00
     STA DECODER_WBR
-    LDA #$FF
-    STA DECODER_SPR
     ; Initialize peripherals.
     JSR GPIO_INIT
     JSR LCD_INIT

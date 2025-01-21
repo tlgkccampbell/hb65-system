@@ -80,9 +80,9 @@ DECODER_WBR := DECODER_REGISTERS + $04
   WRBANK0   = 0
 .ENDENUM
 
-DECODER_SPR     := DECODER_REGISTERS + $06
-DECODER_SPRL    := DECODER_SPR
-DECODER_SPRH    := DECODER_SPR+1
+DECODER_BAR0    := DECODER_REGISTERS + $05  ; Bank-Associated Register 0
+DECODER_BAR1    := DECODER_REGISTERS + $06  ; Bank-Associated Register 1
+DECODER_BAR2    := DECODER_REGISTERS + $07  ; Bank-Associated Register 2
 
 DECODER_SR0     := DECODER_REGISTERS + $08  ; Scratch Register 0 (8-bit)
 DECODER_SR1     := DECODER_REGISTERS + $09  ; Scratch Register 1 (8-bit)
@@ -94,19 +94,19 @@ DECODER_SR6     := DECODER_REGISTERS + $0E  ; Scratch Register 6 (8-bit)
 DECODER_SR7     := DECODER_REGISTERS + $0F  ; Scratch Register 7 (8-bit)
 
 DECODER_SRA     := DECODER_SR0              ; Scratch Register A (16-bit)
-DECODER_SRAL    := DECODER_SRA+0            ; Trashed by yielding.
+DECODER_SRAL    := DECODER_SRA+0            
 DECODER_SRAH    := DECODER_SRA+1 
 
 DECODER_SRB     := DECODER_SR2              ; Scratch Register B (16-bit)
-DECODER_SRBL    := DECODER_SRB+0            ; Trashed by yielding.
+DECODER_SRBL    := DECODER_SRB+0            
 DECODER_SRBH    := DECODER_SRB+1 
 
 DECODER_SRC     := DECODER_SR4              ; Scratch Register C (16-bit)
-DECODER_SRCL    := DECODER_SRC+0            ; Trashed by yielding.
+DECODER_SRCL    := DECODER_SRC+0            
 DECODER_SRCH    := DECODER_SRC+1 
 
 DECODER_SRD     := DECODER_SR6              ; Scratch Register D (16-bit)
-DECODER_SRDL    := DECODER_SRD+0            ; Trashed by yielding & switching to the system context.
+DECODER_SRDL    := DECODER_SRD+0            
 DECODER_SRDH    := DECODER_SRD+1 
 
 ; System, Type A
