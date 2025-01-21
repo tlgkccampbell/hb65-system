@@ -7,11 +7,39 @@
 ; Address Decoder interface subroutines
 .SEGMENT "BIOS"
 
-; SYSCTX_START procedure
+; DECODER_INTEN_ON procedure
+; Modifies: n/a
+;
+; Globally enables interrupts in the Address Decoder.
+.PROC DECODER_INTEN_ON
+    PHA
+    LDA DECODER_ICR
+    ORA #(1 << DECODER_ICR_BIT::INTEN)
+    STA DECODER_ICR
+    PLA
+    RTS
+.ENDPROC
+.EXPORT DECODER_INTEN_ON
+
+; DECODER_INTEN_OFF procedure
+; Modifies: n/a
+;
+; Globally disables interrupts in the Address Decoder.
+.PROC DECODER_INTEN_OFF
+    PHA
+    LDA DECODER_ICR
+    AND #<~(1 << DECODER_ICR_BIT::INTEN)
+    STA DECODER_ICR
+    PLA
+    RTS
+.ENDPROC
+.EXPORT DECODER_INTEN_OFF
+
+; DECODER_SYSCTX_ON procedure
 ; Modifies: n/a
 ;
 ; Enters System Context Mode.
-.PROC SYSCTX_START
+.PROC DECODER_SYSCTX_ON
     PHA
     LDA DECODER_DCR
     ORA #(1 << DECODER_DCR_BIT::SYSCTX)
@@ -19,13 +47,13 @@
     PLA
     RTS
 .ENDPROC
-.EXPORT SYSCTX_START
+.EXPORT DECODER_SYSCTX_ON
 
-; SYSCTX_END procedure
+; DECODER_SYSCTX_OFF procedure
 ; Modifies: n/a
 ;
 ; Leaves System Context Mode.
-.PROC SYSCTX_END
+.PROC DECODER_SYSCTX_OFF
     PHA
     LDA DECODER_DCR
     AND #<~(1 << DECODER_DCR_BIT::SYSCTX)
@@ -33,13 +61,13 @@
     PLA
     RTS
 .ENDPROC
-.EXPORT SYSCTX_END
+.EXPORT DECODER_SYSCTX_OFF
 
-; ALTFN_START procedure
+; DECODER_ALTFN_ON procedure
 ; Modifies: n/a
 ;
 ; Enters Alternative Function Mode.
-.PROC ALTFN_START
+.PROC DECODER_ALTFN_ON
     PHA
     LDA DECODER_DCR
     ORA #(1 << DECODER_DCR_BIT::ALTFN)
@@ -47,13 +75,13 @@
     PLA
     RTS
 .ENDPROC
-.EXPORT ALTFN_START
+.EXPORT DECODER_ALTFN_ON
 
-; ALTFN_END procedure
+; DECODER_ALTFN_OFF procedure
 ; Modifies: n/a
 ;
 ; Leaves Alternative Function Mode.
-.PROC ALTFN_END
+.PROC DECODER_ALTFN_OFF
     PHA
     LDA DECODER_DCR
     AND #<~(1 << DECODER_DCR_BIT::ALTFN)
@@ -61,4 +89,4 @@
     PLA
     RTS
 .ENDPROC
-.EXPORT ALTFN_END
+.EXPORT DECODER_ALTFN_OFF

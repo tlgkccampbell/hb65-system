@@ -3,22 +3,40 @@ _INCLUDE_SYSTEM_ = 1
 
 .INCLUDE    "hb65-registers.inc"
 
-.GLOBAL     SYSCTX_START, SYSCTX_END, ALTFN_START, ALTFN_END
+.GLOBAL     DECODER_INTEN_ON, DECODER_INTEN_OFF
+.GLOBAL     DECODER_SYSCTX_ON, DECODER_SYSCTX_OFF
+.GLOBAL     DECODER_ALTFN_ON, DECODER_ALTFN_OFF
+
+; GLOBAL_INTERRUPT_MASK_OFF macro
+; Modifies: n/a
+;
+; Disables the Address Decoder's global interrupt mask.
+.MACRO GLOBAL_INTERRUPT_MASK_OFF
+    JSR DECODER_INTEN_ON
+.ENDMAC
+
+; GLOBAL_INTERRUPT_MASK_ON macro
+; Modifies: n/a
+;
+; Enables the Address Decoder's global interrupt mask.
+.MACRO GLOBAL_INTERRUPT_MASK_ON
+    JSR DECODER_INTEN_OFF
+.ENDMAC
 
 ; SFMODE_SYSCTX_ON macro
-; Modifies: X
+; Modifies: n/a
 ;
 ; Enters System Context Mode.
 .MACRO SFMODE_SYSCTX_ON
-    JSR SYSCTX_START
+    JSR DECODER_SYSCTX_ON
 .ENDMAC
 
 ; SFMODE_SYSCTX_OFF macro
-; Modifies: X
+; Modifies: n/a
 ;
 ; Leaves System Context Mode.
 .MACRO SFMODE_SYSCTX_OFF
-    JSR SYSCTX_END
+    JSR DECODER_SYSCTX_OFF
 .ENDMAC
 
 ; SFMODE_ALTFN_ON
@@ -26,7 +44,7 @@ _INCLUDE_SYSTEM_ = 1
 ;
 ; Enters Alternative Function Mode.
 .MACRO SFMODE_ALTFN_ON
-    JSR ALTFN_START
+    JSR DECODER_ALTFN_ON
 .ENDMAC
 
 ; SFMODE_ALTFN_OFF macro
@@ -34,7 +52,7 @@ _INCLUDE_SYSTEM_ = 1
 ;
 ; Leaves Alternative Function Mode.
 .MACRO SFMODE_ALTFN_OFF
-    JSR ALTFN_END
+    JSR DECODER_ALTFN_OFF
 .ENDMAC
 
 ; SFMODE_SYSCTX_ALTFN_ON macro
@@ -42,8 +60,8 @@ _INCLUDE_SYSTEM_ = 1
 ;
 ; Enters System Context Mode and Alternative Function Mode.
 .MACRO SFMODE_SYSCTX_ALTFN_ON
-    JSR SYSCTX_START
-    JSR ALTFN_START
+    JSR DECODER_SYSCTX_ON
+    JSR DECODER_ALTFN_ON
 .ENDMACRO
 
 ; SFMODE_RESET
@@ -51,8 +69,8 @@ _INCLUDE_SYSTEM_ = 1
 ;
 ; Returns the Address Decoder to its standard operating mode.
 .MACRO SFMODE_RESET
-    JSR ALTFN_END
-    JSR SYSCTX_END
+    JSR DECODER_ALTFN_OFF
+    JSR DECODER_SYSCTX_OFF
 .ENDMACRO
 
 ; SFMODE_IMPLIED

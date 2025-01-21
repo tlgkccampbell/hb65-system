@@ -11,13 +11,11 @@ BAR_PCH := DECODER_BAR2
 
 ; Process metadata table
 .SEGMENT "SYSZP"
-PROC_MAX_COUNT:         .RES 1
-PROC_CURRENT_IX:        .RES 1
-
-.SEGMENT "SYSWRAM"
-PROC_METADATA_STATUS:   .RES 16
-PROC_METADATA_MLR:      .RES 16
-PROC_METADATA_RLR:      .RES 16
+PROC_MAX:           .RES 1
+PROC_INDEX:         .RES 1
+PROC_METADATA_STATUS:
+PROC_METADATA_MLR:  .RES 16
+PROC_METADATA_RLR:  .RES 16
 
 .ENUM PROC_STATUS_BIT
     VALID = 7 
@@ -34,6 +32,7 @@ PROC_METADATA_RLR:      .RES 16
     PHA
     PHX
 
+    GLOBAL_INTERRUPT_MASK_ON
     SFMODE_SYSCTX_ON
         ; Check whether we have 128K or 512K of WRAM, which changes
         ; how many processes we can run simultaneously.
@@ -50,14 +49,15 @@ PROC_METADATA_RLR:      .RES 16
         ; maximum process count and then clearing the status flags
         ; for all processes.
       PROC_INIT_TBL:
-        STA PROC_MAX_COUNT
-        STZ PROC_CURRENT_IX
+        STA PROC_MAX
+        STZ PROC_INDEX
         TAX
       : DEX
         STZ PROC_METADATA_STATUS, X
         BNE :-
     SFMODE_SYSCTX_OFF
-    
+    GLOBAL_INTERRUPT_MASK_OFF
+
     PLX
     PLA
     RTS
@@ -76,10 +76,8 @@ PROC_METADATA_RLR:      .RES 16
     PHA
     PHX
 
-    ; Disable interrupts
-    DEC DECODER_ICR
-
     ; Switch to the system context.
+    GLOBAL_INTERRUPT_MASK_ON
     SFMODE_SYSCTX_ON
       ; Find an unused process slot in the metadata table.
       PROC_NEW_FIND_UNUSED:
@@ -87,20 +85,18 @@ PROC_METADATA_RLR:      .RES 16
       : BIT PROC_METADATA_STATUS, X
         BPL PROC_NEW_ALLOC
         INX
-        CPX PROC_MAX_COUNT
+        CPX PROC_MAX
         BNE :-
 
         ; Failed to find an open slot, so exit with $FF in A.
         LDA #$FF
         JMP PROC_NEW_DONE
 
-        ; Find an open slot, set its valid bit, and store its
-        ; initial program counter and register values in the metadata table.
+        ; Find an open slot and initialize its entry in the metadata table.
         ; Return the new process index in the A register.
       PROC_NEW_ALLOC:
         LDA #(1 << PROC_STATUS_BIT::VALID)
-        STA PROC_METADATA_STATUS, X
-        STZ PROC_METADATA_MLR, X
+        STA PROC_METADATA_MLR, X
         STZ PROC_METADATA_RLR, X
 
         ; Temporarily switch WRAM banks to the new process
@@ -116,9 +112,7 @@ PROC_METADATA_RLR:      .RES 16
         STA DECODER_WBR
 PROC_NEW_DONE:
     SFMODE_SYSCTX_OFF
-
-    ; Re-enable interrupts
-    INC DECODER_ICR
+    GLOBAL_INTERRUPT_MASK_OFF
 
     PLX
     PLA
@@ -132,46 +126,33 @@ PROC_NEW_DONE:
 ; Yields execution to the process scheduler, allowing another idle process
 ; to resume execution.
 .PROC PROC_YIELD
-    ; Pull the return address off the process stack.
-    PLA
-    PLY
-
-    ; Disable interrupts.
-    DEC DECODER_ICR
-
-    ; Switch to the system context.
+    GLOBAL_INTERRUPT_MASK_ON
     SFMODE_SYSCTX_ON
-        ; Store the return address in Scratch Register A.
-        STA DECODER_SRAL
-        STY DECODER_SRAH
-        INC DECODER_SRAL
+        ; Store the previous process' return address and stack pointer
+        ; in the Address Decoder's BARs.
+        PLA
+        STA BAR_PCL
+        PLA
+        STA BAR_PCH
+        INC BAR_PCL
         BNE :+
-        INC DECODER_SRAH
-      :
+        INC BAR_PCH
+      : TSX
+        STX BAR_STK
+
         ; Get the previous process' Address Decoder registers 
         ; and store them in the process metadata table.
-        LDX PROC_CURRENT_IX
+        LDX PROC_INDEX
         LDA DECODER_MLR
+        ORA #(1 << PROC_STATUS_BIT::VALID)
         STA PROC_METADATA_MLR, X
         LDA DECODER_RLR
         STA PROC_METADATA_RLR, X
 
-        ; Get the previous process' program counter and stack pointer
-        ; and store them in the BARs.
-        TXA
-        LDX DECODER_SRAL
-        STX BAR_PCL
-        LDX DECODER_SRAH
-        STX BAR_PCH
-        TSX
-        STX BAR_STK
-        TAX
-
         ; Find the next valid process and switch to it.
       PROC_YIELD_FIND_PROC:
-        LDX PROC_CURRENT_IX
       : INX
-        CPX PROC_MAX_COUNT
+        CPX PROC_MAX
         BNE :+
         LDX #$00
       : BIT PROC_METADATA_STATUS, X
@@ -179,7 +160,7 @@ PROC_NEW_DONE:
 
         ; Switch to the process' memory space.
       PROC_SWITCH:
-        STX PROC_CURRENT_IX
+        STX PROC_INDEX
         STX DECODER_WBR
 
         ; Get the new process' Address Decoder registers 
@@ -189,23 +170,14 @@ PROC_NEW_DONE:
         LDA PROC_METADATA_RLR, X
         STA DECODER_RLR
 
-        ; Get the new process' program counter and stack pointer
-        ; from the BARs, update the CPU stack pointer, and prepare to jump.
-        TXA
-        LDX BAR_PCL
-        STX DECODER_SRAL
-        LDX BAR_PCH
-        STX DECODER_SRAH
+        ; Update the stack register.
         LDX BAR_STK
         TXS
-        TAX
-    SFMODE_SYSCTX_OFF
-
-    ; Re-enable interrupts.
-    INC DECODER_ICR
+    DEC DECODER_DCR ; Stack-safe SYSCTX = 0
+    INC DECODER_ICR ; Stack-save INTEN  = 1
 
     ; Jump to the process' return address.
-    JMP (DECODER_SRA)
+    JMP (BAR_PCL)
 .ENDPROC
 .EXPORT PROC_YIELD
 
@@ -214,13 +186,11 @@ PROC_NEW_DONE:
 ;
 ; Terminates the current process and switches to another running process.
 .PROC PROC_TERM
-    ; Disable interrupts.
-    DEC DECODER_ICR
-
     ; Switch to the system context.
+    GLOBAL_INTERRUPT_MASK_ON
     SFMODE_SYSCTX_ON
         ; Clear the current process' status bits
-        LDX PROC_CURRENT_IX
+        LDX PROC_INDEX
         STZ PROC_METADATA_STATUS, X
 
         ; Switch to the system process.
