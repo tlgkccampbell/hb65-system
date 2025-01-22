@@ -4,89 +4,79 @@
 
 .INCLUDE    "hb65-system.inc"
 
+.SEGMENT "SHAREDPAGE"
+
+DCRSTKPTR:  .RES 1
+DCRSTK:     .RES 7
+
 ; Address Decoder interface subroutines
 .SEGMENT "BIOS"
 
-; DECODER_INTEN_ON procedure
+; DCRSTK_INIT
 ; Modifies: n/a
 ;
-; Globally enables interrupts in the Address Decoder.
-.PROC DECODER_INTEN_ON
-    PHA
-    LDA DECODER_ICR
-    ORA #(1 << DECODER_ICR_BIT::INTEN)
-    STA DECODER_ICR
-    PLA
+; Initializes the Decoder Control Register stack.
+.PROC DCRSTK_INIT
+    STZ DCRSTKPTR
     RTS
 .ENDPROC
-.EXPORT DECODER_INTEN_ON
+.EXPORT DCRSTK_INIT
 
-; DECODER_INTEN_OFF procedure
-; Modifies: n/a
+; DCRSTK_SET_PUSH
+; Modifies: A
 ;
-; Globally disables interrupts in the Address Decoder.
-.PROC DECODER_INTEN_OFF
-    PHA
-    LDA DECODER_ICR
-    AND #<~(1 << DECODER_ICR_BIT::INTEN)
-    STA DECODER_ICR
-    PLA
-    RTS
-.ENDPROC
-.EXPORT DECODER_INTEN_OFF
-
-; DECODER_SYSCTX_ON procedure
-; Modifies: n/a
-;
-; Enters System Context Mode.
-.PROC DECODER_SYSCTX_ON
-    PHA
+; Pushes the value of the Decoder Control Register onto the Decoder Control
+; Register Stack, then updates the Decoder Control Register by setting it to
+; the value passed in the A register.
+.PROC DCRSTK_SET_PUSH
+    PHX
+    STA DECODER_SR6
     LDA DECODER_DCR
-    ORA #(1 << DECODER_DCR_BIT::SYSCTX)
+    LDX DCRSTKPTR
+    STA DCRSTK, X
+    INX
+    STX DCRSTKPTR
+    LDA DECODER_SR6
     STA DECODER_DCR
-    PLA
+    PLX
     RTS
 .ENDPROC
-.EXPORT DECODER_SYSCTX_ON
+.EXPORT DCRSTK_SET_PUSH
 
-; DECODER_SYSCTX_OFF procedure
-; Modifies: n/a
+; DCRSTK_ORA_PUSH
+; Modifies: A
 ;
-; Leaves System Context Mode.
-.PROC DECODER_SYSCTX_OFF
-    PHA
+; Pushes the value of the Decoder Control Register onto the Decoder Control
+; Register Stack, then updates the Decoder Control Register by performing a
+; bitwise OR with the contents of A.
+.PROC DCRSTK_ORA_PUSH
+    PHX
+    STA DECODER_SR6
     LDA DECODER_DCR
-    AND #<~(1 << DECODER_DCR_BIT::SYSCTX)
+    LDX DCRSTKPTR
+    STA DCRSTK, X
+    INX
+    STX DCRSTKPTR
+    ORA DECODER_SR6
     STA DECODER_DCR
-    PLA
+    PLX
     RTS
 .ENDPROC
-.EXPORT DECODER_SYSCTX_OFF
+.EXPORT DCRSTK_ORA_PUSH
 
-; DECODER_ALTFN_ON procedure
-; Modifies: n/a
+; DCRSTK_POP
+; Modifies: A
 ;
-; Enters Alternative Function Mode.
-.PROC DECODER_ALTFN_ON
-    PHA
-    LDA DECODER_DCR
-    ORA #(1 << DECODER_DCR_BIT::ALTFN)
+; Pops a value off of the Decoder Control Register Stack and writes
+; it to the Decoder Control Register. The popped value is returned
+; in the A register.
+.PROC DCRSTK_POP
+    PHX
+    LDX DCRSTKPTR
+    DEX
+    LDA DCRSTK, X
     STA DECODER_DCR
-    PLA
+    STX DCRSTKPTR
+    PLX
     RTS
 .ENDPROC
-.EXPORT DECODER_ALTFN_ON
-
-; DECODER_ALTFN_OFF procedure
-; Modifies: n/a
-;
-; Leaves Alternative Function Mode.
-.PROC DECODER_ALTFN_OFF
-    PHA
-    LDA DECODER_DCR
-    AND #<~(1 << DECODER_DCR_BIT::ALTFN)
-    STA DECODER_DCR
-    PLA
-    RTS
-.ENDPROC
-.EXPORT DECODER_ALTFN_OFF
