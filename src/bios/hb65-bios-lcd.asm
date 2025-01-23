@@ -8,7 +8,7 @@
 .IMPORT     TIME_DELAY_50US, TIME_DELAY_1MS, TIME_DELAY_50MS
 
 ; LCD state
-.SEGMENT "SYSZP"
+.SEGMENT "SYSZP": zeropage
 
 _LCD_COLS           = 20
 _LCD_ROWS           = 4

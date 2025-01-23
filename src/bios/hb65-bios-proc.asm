@@ -10,7 +10,8 @@ BAR_PCL := DECODER_BAR1
 BAR_PCH := DECODER_BAR2
 
 ; Process metadata table
-.SEGMENT "SYSZP"
+.SEGMENT "SYSZP": zeropage
+
 PROC_MAX:           .RES 1
 PROC_INDEX:         .RES 1
 PROC_METADATA_STATUS:

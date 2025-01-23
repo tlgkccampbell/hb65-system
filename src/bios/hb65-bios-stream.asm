@@ -5,79 +5,70 @@
 .INCLUDE    "../hb65-system.inc"
 
 .IMPORT     JMP_SRA
+.IMPORt		LUT_BINSTRS, LUT_HEXCHARS
+
+; Stream data
+.SEGMENT "SYSZP": zeropage
+
+_STRM_PUTC_PTR:
+_STRM_PUTC_PTRL:	.RES 1
+_STRM_PUTC_PTRH:	.RES 1
+_STRM_DATA_PTR:
+_STRM_DATA_PTRL:	.RES 1
+_STRM_DATA_PTRH:	.RES 1
 
 ; Stream routines
 .SEGMENT "BIOS"
 
-; LUT_HEXCHARS
-; A lookup table mapping integer values to hexadecimal characters.
-LUT_HEXCHARS:
-  .BYTE '0'
-  .BYTE '1'
-  .BYTE '2'
-  .BYTE '3'
-  .BYTE '4'
-  .BYTE '5'
-  .BYTE '6'
-  .BYTE '7'
-  .BYTE '8'
-  .BYTE '9'
-  .BYTE 'A'
-  .BYTE 'B'
-  .BYTE 'C'
-  .BYTE 'D'
-  .BYTE 'E'
-  .BYTE 'F'
+; _STRM_JMP_PUTC
+; Modifies: n/a
+;
+; Performs an indirect jump to the pointer at _STRM_PUTC_PTR.
+.PROC _STRM_JMP_PUTC
+	JMP (_STRM_PUTC_PTR)
+.ENDPROC
 
 ; STRM_PUTNL
-; Modifies: n/a
+; Modifies: A
 ; 
 ; Writes a newline character using the PUTC procedure pointed to by Scratch Register A.
 .PROC STRM_PUTNL
-  PHA
-  LDA #$0A
-  JSR JMP_SRA
-  PLA
-  RTS
+	LDA #$0A
+  	JSR JMP_SRA
+  	RTS
 .ENDPROC
 .EXPORT STRM_PUTNL
 
 ; STRM_PUTSTR procedure
-; Modifies: ?
+; Modifies: A
 ;
 ; Writes a string using the PUTC procedure pointed to by Scratch Register A.
 ; The null-terminated string data should be pointed to by Scratch Register B.
 .PROC STRM_PUTSTR
-    PHA
-    PHX
-    PHY
-    LDY #$00
-  LOOP:
-    LDA (DECODER_SRB), Y
-    BEQ :+
-
-    ; Preserve Y and Scratch Register B
-    PHY
-    LDX DECODER_SRBL
-    PHX
-    LDX DECODER_SRBH
-    PHX
-
-    ; Call PUTC
-    JSR JMP_SRA
-
-    ; Restore Y and Scratch Register B
-    PLX
-    STX DECODER_SRBH
-    PLX
-    STX DECODER_SRBL
-    PLY
-    INY
-    JMP LOOP
-
-  : PLY
-    PLX
-    PLA
+	PHY
+	SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
+		; Pull the PUTC pointer from Scratch Register A and store it in the zeropage.
+		LDA DECODER_SRAL
+		STA _STRM_PUTC_PTRL
+		LDA DECODER_SRAH
+		STA _STRM_PUTC_PTRH
+		; Pull the DATA pointer from Scratch Register B and store it in the zeropage.
+		LDA DECODER_SRBL
+		STA _STRM_DATA_PTRL
+		LDA DECODER_SRBH
+		STA _STRM_DATA_PTRH
+		; Begin the stream operation.
+		LDY #$00
+	  LOOP:
+	  	; Load the next character and check for nulls.
+		LDA (_STRM_DATA_PTR), Y
+		BEQ DONE
+		JSR _STRM_JMP_PUTC
+		INY
+		JMP LOOP
+  	  DONE:
+	SFMODE_POP
+	PLY
     RTS
 .ENDPROC
 .EXPORT STRM_PUTSTR
@@ -88,34 +79,38 @@ LUT_HEXCHARS:
 ; Writes a string using the PUTC procedure pointed to by Scratch Register A.
 ; The null-terminated string data should be inlined immediately after the call to this procedure.
 .PROC STRM_PUTSTR_IMM
-    PLA
-    STA DECODER_SRDL
-    PLA
-    STA DECODER_SRDH
-    PHX
-    BRA STRIMM3
-  STRIMM2:
-    LDX DECODER_SRDL
-    PHX
-    LDX DECODER_SRDH
-    PHX
-    JSR JMP_SRA
-    PLX
-    STX DECODER_SRDH
-    PLX
-    STX DECODER_SRDL
-  STRIMM3:
-    INC DECODER_SRDL
-    BNE STRIMM4
-    INC DECODER_SRDH
-  STRIMM4:
-    LDA (DECODER_SRD)
-    BNE STRIMM2
-    LDA DECODER_SRDH
-    PLX
-    PHA
-    LDA DECODER_SRDL
-    PHA
+	SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
+		; Pull the PUTC pointer from Scratch Register A and store it in the zeropage.
+		LDA DECODER_SRAL
+		STA _STRM_PUTC_PTRL
+		LDA DECODER_SRAH
+		STA _STRM_PUTC_PTRH
+		; Pull the DATA pointer from the stack and store it in the zeropage.
+		PLA
+		STA _STRM_DATA_PTRL
+		PLA
+		STA _STRM_DATA_PTRH
+		; Begin the stream operation.
+		PHX
+		BRA STRIMM3
+	  STRIMM2:
+	  	; Call PUTC.
+		JSR _STRM_JMP_PUTC
+	  STRIMM3:
+	  	; Move to the next character in the string.
+		INC _STRM_DATA_PTRL
+		BNE STRIMM4
+		INC _STRM_DATA_PTRH
+	  STRIMM4: 
+	  	; Load the next character and check for nulls.
+		LDA (_STRM_DATA_PTR)
+		BNE STRIMM2
+		LDA _STRM_DATA_PTRH
+		PLX
+		PHA
+		LDA _STRM_DATA_PTRL
+		PHA
+	SFMODE_POP
     RTS
 .ENDPROC
 .EXPORT STRM_PUTSTR_IMM
@@ -155,13 +150,12 @@ LUT_HEXCHARS:
 ; using the PUTC procedure pointed to by Scratch Register A.
 .PROC STRM_PUTHEX16
     PHA
-    PHX
+	; Write the high nibble
     LDA DECODER_SRBH
-    LDX DECODER_SRBL
     JSR STRM_PUTHEX
-    TXA
+	; Write the low nibble
+    LDA DECODER_SRBL
     JSR STRM_PUTHEX
-    PLX
     PLA
     RTS
 .ENDPROC
