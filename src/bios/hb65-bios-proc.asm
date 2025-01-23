@@ -33,7 +33,7 @@ PROC_METADATA_RLR:  .RES 16
     PHX
 
     GLOBAL_INTERRUPT_MASK_ON
-        DECODER_DCR_ORA_PUSH (1 << DECODER_DCR_BIT::SYSCTX)
+        SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
             ; Check whether we have 128K or 512K of WRAM, which changes
             ; how many processes we can run simultaneously.
           PROC_INIT_RAM_CHECK:
@@ -55,7 +55,7 @@ PROC_METADATA_RLR:  .RES 16
           : DEX
             STZ PROC_METADATA_STATUS, X
             BNE :-
-        DECODER_DCR_POP
+        SFMODE_POP
     GLOBAL_INTERRUPT_MASK_OFF
 
     PLX
@@ -78,7 +78,7 @@ PROC_METADATA_RLR:  .RES 16
 
     ; Switch to the system context.
     GLOBAL_INTERRUPT_MASK_ON
-        DECODER_DCR_ORA_PUSH (1 << DECODER_DCR_BIT::SYSCTX)
+        SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
             ; Find an unused process slot in the metadata table.
           PROC_NEW_FIND_UNUSED:
             LDX #$00
@@ -111,7 +111,7 @@ PROC_METADATA_RLR:  .RES 16
             STX BAR_PCH       ; Program counter (high)
             STA DECODER_WBR
     PROC_NEW_DONE:
-        DECODER_DCR_POP
+        SFMODE_POP
     GLOBAL_INTERRUPT_MASK_OFF
 
     PLX
@@ -127,7 +127,7 @@ PROC_METADATA_RLR:  .RES 16
 ; to resume execution.
 .PROC PROC_YIELD
     GLOBAL_INTERRUPT_MASK_ON
-        DECODER_DCR_ORA_PUSH (1 << DECODER_DCR_BIT::SYSCTX)
+        SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
             ; Store the previous process' return address and stack pointer
             ; in the Address Decoder's BARs.
             PLA
@@ -166,7 +166,7 @@ PROC_METADATA_RLR:  .RES 16
             STA DECODER_MLR
             LDA PROC_METADATA_RLR, X
             STA DECODER_RLR
-        DECODER_DCR_POP
+        SFMODE_POP
             ; Update the WRAM bank index and stack register.
             STX DECODER_WBR
             LDX BAR_STK
@@ -185,7 +185,7 @@ PROC_METADATA_RLR:  .RES 16
 .PROC PROC_TERM
     ; Switch to the system context.
     GLOBAL_INTERRUPT_MASK_ON
-        DECODER_DCR_ORA_PUSH (1 << DECODER_DCR_BIT::SYSCTX)
+        SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
             ; Clear the current process' status bits
             LDX PROC_INDEX
             STZ PROC_METADATA_STATUS, X
@@ -193,7 +193,7 @@ PROC_METADATA_RLR:  .RES 16
             ; Switch to the system process.
             LDX #$00
             JMP PROC_YIELD::PROC_SWITCH
-        DECODER_DCR_POP_IMPLIED
+        SFMODE_POP_IMPLIED
     GLOBAL_INTERRUPT_MASK_IMPLIED
 .ENDPROC
 .EXPORT PROC_TERM
