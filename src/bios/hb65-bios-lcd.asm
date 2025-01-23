@@ -10,8 +10,6 @@
 ; LCD state
 .SEGMENT "SYSZP": zeropage
 
-_LCD_COLS           = 20
-_LCD_ROWS           = 4
 _LCD_DATA_BUFFER:   .RES 1
 _LCD_CURSOR_X:      .RES 1
 _LCD_CURSOR_Y:      .RES 1 
@@ -412,7 +410,7 @@ LCD_PROC_START LCD_CHECK_NEWLINE
     ; Make sure we haven't reached the last line of the display.
     ; If we have, immediately return.
     LDA _LCD_CURSOR_Y
-    CMP #_LCD_ROWS-1
+    CMP #LCD_ROWS-1
     BEQ ADVANCE_DONE
 
     ; Advance to the next line and update the cursor position.
@@ -440,13 +438,13 @@ LCD_PROC_START LCD_CHECK_OVERFLOW
     ; Make sure we're at the last column of the display.
     ; If not, immediately return.
     LDA _LCD_CURSOR_X
-    CMP #_LCD_COLS
+    CMP #LCD_COLS
     BNE ADVANCE_DONE
 
     ; Make sure we haven't reached the last line of the display.
     ; If we have, set the carry flag and return.
     LDA _LCD_CURSOR_Y
-    CMP #_LCD_ROWS-1
+    CMP #LCD_ROWS-1
     BNE ADVANCE_FAIL
 
     ; Move the cursor to the next line.
