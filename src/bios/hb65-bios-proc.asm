@@ -8,15 +8,15 @@ BAR_STK := DECODER_BAR0
 BAR_PC  := DECODER_BAR1
 BAR_PCL := DECODER_BAR1
 BAR_PCH := DECODER_BAR2
+BAR_MLR := DECODER_BAR3
+BAR_RLR := DECODER_BAR4
 
 ; Process metadata table
 .SEGMENT "SYSZP": zeropage
 
 PROC_MAX:           .RES 1
 PROC_INDEX:         .RES 1
-PROC_METADATA_STATUS:
-PROC_METADATA_MLR:  .RES 16
-PROC_METADATA_RLR:  .RES 16
+PROC_METADATA:      .RES 16
 
 .ENUM PROC_STATUS_BIT
     VALID = 7 
@@ -54,7 +54,7 @@ PROC_METADATA_RLR:  .RES 16
             STZ PROC_INDEX
             TAX
           : DEX
-            STZ PROC_METADATA_STATUS, X
+            STZ PROC_METADATA, X
             BNE :-
         SFMODE_POP
     GLOBAL_INTERRUPT_MASK_OFF
@@ -83,7 +83,7 @@ PROC_METADATA_RLR:  .RES 16
             ; Find an unused process slot in the metadata table.
           PROC_NEW_FIND_UNUSED:
             LDX #$00
-          : BIT PROC_METADATA_STATUS, X
+          : BIT PROC_METADATA, X
             BPL PROC_NEW_ALLOC
             INX
             CPX PROC_MAX
@@ -97,11 +97,10 @@ PROC_METADATA_RLR:  .RES 16
             ; Return the new process index in the A register.
           PROC_NEW_ALLOC:
             LDA #(1 << PROC_STATUS_BIT::VALID)
-            STA PROC_METADATA_MLR, X
-            STZ PROC_METADATA_RLR, X
+            STA PROC_METADATA, X
 
             ; Temporarily switch WRAM banks to the new process
-            ; so that we can save its metadata in the Address Decoder's BARs.
+            ; so that we can save its metadata in the Bank-Associated Registers.
             LDA DECODER_WBR
             STX DECODER_WBR
             LDX #$FF
@@ -110,6 +109,8 @@ PROC_METADATA_RLR:  .RES 16
             STX BAR_PCL       ; Program counter (low)
             LDX DECODER_SRAH
             STX BAR_PCH       ; Program counter (high)
+            STZ BAR_MLR       ; Memory Layout Register
+            STZ BAR_RLR       ; Register Layout Register
             STA DECODER_WBR
     PROC_NEW_DONE:
         SFMODE_POP
@@ -144,11 +145,12 @@ PROC_METADATA_RLR:  .RES 16
             ; Get the previous process' Address Decoder registers 
             ; and store them in the process metadata table.
             LDX PROC_INDEX
+            LDA #(1 << PROC_STATUS_BIT::VALID)
+            STA PROC_METADATA, X
             LDA DECODER_MLR
-            ORA #(1 << PROC_STATUS_BIT::VALID)
-            STA PROC_METADATA_MLR, X
+            STA BAR_MLR
             LDA DECODER_RLR
-            STA PROC_METADATA_RLR, X
+            STA BAR_RLR
 
           PROC_YIELD_FIND_PROC:
             ; Find the next valid process and switch to it.
@@ -156,20 +158,20 @@ PROC_METADATA_RLR:  .RES 16
             CPX PROC_MAX
             BNE :+
             LDX #$00
-          : BIT PROC_METADATA_STATUS, X
+          : BIT PROC_METADATA, X
             BPL :--
 
           PROC_SWITCH:
-            ; Get the new process' Address Decoder registers 
-            ; from the process metadata table and update the Address Decoder.
+            ; Switch to the new process.
             STX PROC_INDEX
-            LDA PROC_METADATA_MLR, X
-            STA DECODER_MLR
-            LDA PROC_METADATA_RLR, X
-            STA DECODER_RLR
         SFMODE_POP
-            ; Update the WRAM bank index and stack register.
+            ; Copy the MLR and RLR from the BARs into the Address Decoder,
+            ; then set the stack pointer.
             STX DECODER_WBR
+            LDA BAR_MLR
+            STA DECODER_MLR
+            LDA BAR_RLR
+            STA DECODER_RLR
             LDX BAR_STK
             TXS
     GLOBAL_INTERRUPT_MASK_OFF
@@ -189,7 +191,7 @@ PROC_METADATA_RLR:  .RES 16
         SFMODE_PUSH_AND_ORA (1 << DECODER_DCR_BIT::SYSCTX)
             ; Clear the current process' status bits
             LDX PROC_INDEX
-            STZ PROC_METADATA_STATUS, X
+            STZ PROC_METADATA, X
 
             ; Switch to the system process.
             LDX #$00
