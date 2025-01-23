@@ -68,12 +68,12 @@ TMPSTORE    := $02FF
 .EXPORT DCRSTK_ORA_PUSH
 
 ; DCRSTK_POP
-; Modifies: A
+; Modifies: n/a
 ;
 ; Pops a value off of the Decoder Control Register Stack and writes
-; it to the Decoder Control Register. The popped value is returned
-; in the A register.
+; it to the Decoder Control Register.
 .PROC DCRSTK_POP
+    PHA
     PHX
     LDX DCRSTKPTR
     DEX
@@ -81,5 +81,6 @@ TMPSTORE    := $02FF
     STA DECODER_DCR
     STX DCRSTKPTR
     PLX
+    PLA
     RTS
 .ENDPROC

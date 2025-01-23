@@ -37,8 +37,10 @@ _INCLUDE_SYSTEM_ = 1
 ; Register Stack, then updates the Decoder Control Register by setting it to
 ; the value of `bits`.
 .MACRO DECODER_DCR_SET_PUSH bits
+    PHA
     LDA #bits
     JSR DCRSTK_SET_PUSH
+    PLA
 .ENDMAC
 
 ; DECODER_DCR_ORA_PUSH macro
@@ -48,8 +50,10 @@ _INCLUDE_SYSTEM_ = 1
 ; Register Stack, then updates the Decoder Control Register by performing a
 ; bitwise OR with the value of `bits`.
 .MACRO DECODER_DCR_ORA_PUSH bits
+    PHA
     LDA #bits
     JSR DCRSTK_ORA_PUSH
+    PLA
 .ENDMAC
 
 ; DECODER_DCR_POP macro
