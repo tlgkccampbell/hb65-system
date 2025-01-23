@@ -3,6 +3,7 @@
 .FILEOPT    comment,    "BIOS LCD routines"
 
 .INCLUDE    "../hb65-system.inc"
+.INCLUDE    "hb65-bios-lcd.inc"
 
 .IMPORT     TIME_DELAY_50US, TIME_DELAY_1MS, TIME_DELAY_50MS
 
@@ -25,15 +26,6 @@ _LCD_DDRAM_OFFSETS:
   .BYTE $40
   .BYTE $14
   .BYTE $54
-  
-; _LCD_CONTROL_PINS enum
-; Describes the pins of VIA1 PORTB that are used to control the LCD panel.
-.ENUM _LCD_CONTROL_PINS
-    EN = 7
-    RW = 6
-    RS = 5
-    BL = 4
-.ENDENUM
 
 ; _LCD_TOGGLE_ENABLE
 ; Modifies: n/a
@@ -104,7 +96,9 @@ _LCD_DDRAM_OFFSETS:
         ; Read the low nibble.
         JSR _LCD_READ_NIBBLE
         ORA _LCD_DATA_BUFFER
+        TAX
     DECODER_DCR_POP
+    TXA
     PLX
     RTS
 .ENDPROC
@@ -381,13 +375,15 @@ _LCD_DDRAM_OFFSETS:
 
     ; Wait for the LCD to become ready.
     PHA
+    PHA
+    PHA
     JSR _LCD_WAIT
     JSR _LCD_START_DATA_WR
     DECODER_DCR_ORA_PUSH (1 << DECODER_DCR_BIT::SYSCTX) | (1 << DECODER_DCR_BIT::ALTFN)
         INC _LCD_CURSOR_X
 
         ; Present the high nibble.
-        PHA
+        PLA
         ROR
         ROR
         ROR

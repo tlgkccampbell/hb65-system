@@ -9,6 +9,9 @@
 DCRSTKPTR:  .RES 1
 DCRSTK:     .RES 7
 
+; TODO: Replace this
+TMPSTORE    := $02FF
+
 ; Address Decoder interface subroutines
 .SEGMENT "BIOS"
 
@@ -30,13 +33,13 @@ DCRSTK:     .RES 7
 ; the value passed in the A register.
 .PROC DCRSTK_SET_PUSH
     PHX
-    STA DECODER_SR6
+    STA TMPSTORE
     LDA DECODER_DCR
     LDX DCRSTKPTR
     STA DCRSTK, X
     INX
     STX DCRSTKPTR
-    LDA DECODER_SR6
+    LDA TMPSTORE
     STA DECODER_DCR
     PLX
     RTS
@@ -51,13 +54,13 @@ DCRSTK:     .RES 7
 ; bitwise OR with the contents of A.
 .PROC DCRSTK_ORA_PUSH
     PHX
-    STA DECODER_SR6
+    STA TMPSTORE
     LDA DECODER_DCR
     LDX DCRSTKPTR
     STA DCRSTK, X
     INX
     STX DCRSTKPTR
-    ORA DECODER_SR6
+    ORA TMPSTORE
     STA DECODER_DCR
     PLX
     RTS
