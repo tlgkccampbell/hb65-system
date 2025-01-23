@@ -2,7 +2,7 @@
 .FILEOPT    author,     "Cole Campbell"
 .FILEOPT    comment,    "System ROM for the HB65 Microcomputer System"
 
-.IMPORT     DCRSTK_INIT
+.IMPORT     DSTK_INIT
 .IMPORT     GPIO_INIT, GPIO_SET_LEDS, GPIO_BUZZER_BEEP
 .IMPORT     LCD_INIT, LCD_CLEAR, LCD_PUTC
 .IMPORT     UART_INIT
@@ -210,7 +210,7 @@ IRQ:
     LDA #$00
     STA DECODER_WBR
     ; Initialize peripherals.
-    JSR DCRSTK_INIT
+    JSR DSTK_INIT
     JSR GPIO_INIT
     JSR LCD_INIT
     JSR UART_INIT
