@@ -67,21 +67,3 @@ SYSCALLS_GPIO_BUZZER_BEEP   = SYSCALLS_TIME_DELAY_50MS + $02
     JMP (DECODER_SRB)
 .ENDPROC
 .EXPORT JMP_SRB
-
-; JMP_SRC procedure
-; Modifies: n/a
-;
-; Jumps to the procedure pointed to by Scratch Register C.
-.PROC JMP_SRC
-    JMP (DECODER_SRC)
-.ENDPROC
-.EXPORT JMP_SRC
-
-; JMP_SRD procedure
-; Modifies: n/a
-;
-; Jumps to the procedure pointed to by Scratch Register D.
-.PROC JMP_SRD
-    JMP (DECODER_SRD)
-.ENDPROC
-.EXPORT JMP_SRD

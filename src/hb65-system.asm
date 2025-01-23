@@ -79,12 +79,11 @@ IRQ:
     STA DECODER_RLR
     LDA #$00
     STA DECODER_WBR
-    ; Initialize peripherals.
+    ; Initialize system modules.
     JSR DSTK_INIT
     JSR GPIO_INIT
-    JSR LCD_INIT
+    JSR  LCD_INIT
     JSR UART_INIT
-    ; Initialize process management.
     JSR PROC_INIT
     ; Initialize the system process.
  STADDR :+, DECODER_SRA
@@ -103,6 +102,3 @@ IRQ:
 .WORD NMI_HANDLER
 .WORD RES_HANDLER
 .WORD IRQ_HANDLER
-
-; Shared memory
-.SEGMENT "SHAREDMEM"
