@@ -361,7 +361,7 @@ LCD_PROC_START LCD_START_INSTR_WR
 LCD_PROC_END
 
 ; LCD_ENABLE_LIGHT
-; Modifies: A, flags
+; Modifies: n/a
 ;
 ; Turns on the LCD's white backlight.
 LCD_PROC_START LCD_ENABLE_LIGHT
@@ -376,7 +376,7 @@ LCD_PROC_START LCD_ENABLE_LIGHT
 LCD_PROC_END
 
 ; LCD_DISABLE_LIGHT
-; Modifies: A, flags
+; Modifies: n/a
 ;
 ; Turns off the LCD's white backlight.
 LCD_PROC_START LCD_DISABLE_LIGHT
