@@ -7,6 +7,22 @@
 ; Time routines
 .SEGMENT "BIOS"
 
+; TIME_DELAY_5US procedure
+; Modifies: n/a
+;
+; Delays for approximately 5 microseconds (assuming a 3.15 MHz clock).
+.PROC TIME_DELAY_5US
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+.ENDPROC
+.EXPORT TIME_DELAY_5US
+
 ; TIME_DELAY_50US procedure
 ; Modifies: n/a
 ;

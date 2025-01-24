@@ -4,6 +4,11 @@
 
 .INCLUDE    "../hb65-system.inc"
 
+; I2C state
+.SEGMENT "SYSZP": zeropage
+
+_I2C_DATA:  .RES 1
+
 ; I2C routines
 .SEGMENT "BIOS"
 
@@ -78,9 +83,7 @@ I2C_PROC_START I2C_START
     I2C_DAT_UP
     I2C_CLK_UP
     I2C_DAT_DN
-  CLK_DN:
-    INC SYSTEM_VIA_DDRA
-    TRB SYSTEM_VIA_DDRA
+    I2C_CLK_DN
     RTS
 I2C_PROC_END
 
@@ -89,10 +92,11 @@ I2C_PROC_END
 ;
 ; Sends an I2C stop sequence.
 I2C_PROC_START I2C_STOP
-    I2C_DAT_UP
+    I2C_DAT_DN
     I2C_CLK_UP
     I2C_DAT_UP
-    BRA _I2C_START::CLK_DN
+    I2C_CLK_DN
+    RTS
 I2C_PROC_END
 
 ; I2C_ACK procedure
@@ -127,6 +131,7 @@ I2C_PROC_START I2C_IS_ACK
     I2C_CLK_UP
     BIT SYSTEM_VIA_IRA
     TSB SYSTEM_VIA_DDRA
+    TXA
     RTS
 I2C_PROC_END
 
@@ -163,11 +168,11 @@ I2C_PROC_END
 ;
 ; Writes the value in A to the I2C bus.
 I2C_PROC_START I2C_SEND_BYTE
-    STA DECODER_SR0
+    STA _I2C_DATA
     LDA #$80
     LDX #$08
   : TRB SYSTEM_VIA_DDRA
-    ASL DECODER_SR0
+    ASL _I2C_DATA
     BCS :+
     TSB SYSTEM_VIA_DDRA
   : DEC SYSTEM_VIA_DDRA
@@ -180,17 +185,18 @@ I2C_PROC_END
 ; I2C_READ_BYTE procedure
 ; Modifies: A, X
 ;
-; Reads a byte from the I2C bus into A.
+; Reads a byte from the I2C bus into X.
 I2C_PROC_START I2C_READ_BYTE
     I2C_DAT_UP
     LDX #$08
   : DEC SYSTEM_VIA_DDRA
-    ASL DECODER_SR0
+    ASL _I2C_DATA
     BIT SYSTEM_VIA_IRA
     BPL :+
-    INC DECODER_SR0
+    INC _I2C_DATA
   : INC SYSTEM_VIA_DDRA
     DEX
     BNE :--
+    LDX _I2C_DATA
     JMP _I2C_IS_ACK
 I2C_PROC_END
